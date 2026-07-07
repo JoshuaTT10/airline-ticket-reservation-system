@@ -1,0 +1,28 @@
+schema: spec-driven
+
+context: |
+  This project is an Airline Ticket Reservation System built with Django.
+
+  Technology:
+  - Python 3.12
+  - Django
+  - django-htmx
+  - SQLite for local development
+  - uv for dependency management
+  - Ruff for linting and formatting
+  - pytest-django and coverage for testing
+
+  Architecture:
+  - The main Django app is reservations.
+  - Use Django's built-in User model for authentication.
+  - Use Django ORM and migrations for all database changes.
+  - Use Django forms for validation.
+  - Keep business logic out of templates.
+  - Use HTMX for focused partial updates only.
+
+  Business rules:
+  - Flights are recurring daily schedules.
+  - A booking links a user or passenger, flight, travel date, and seat.
+  - The same seat cannot be booked twice for the same flight and travel date.
+  - The first three seat rows are Business class; later rows are Economy.
+  - Reservations are allowed only for the next 14 days.
