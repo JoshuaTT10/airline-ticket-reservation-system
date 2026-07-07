@@ -1,10 +1,32 @@
+# Virtual environments
 .venv/
+venv/
+env/
+
+# Python cache and tooling
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 .pytest_cache/
+.ruff_cache/
+
+# Coverage
 .coverage
+coverage.xml
 htmlcov/
 
+# Django local data
+db.sqlite3
+media/
+
+# Local secrets
+.env
+.env.*
+
+# IntelliJ IDEA
 .idea/
 *.iml
 
+# Operating system files
+.DS_Store
+Thumbs.db
