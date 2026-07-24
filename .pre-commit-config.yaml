@@ -6,12 +6,14 @@ repos:
         entry: uv run ruff check
         language: system
         types: [python]
+        exclude: ^reservations/migrations/
 
       - id: ruff-format
         name: Ruff format check
         entry: uv run ruff format --check
         language: system
         types: [python]
+        exclude: ^reservations/migrations/
 
       - id: django-check
         name: Django system check

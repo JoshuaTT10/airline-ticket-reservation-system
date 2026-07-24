@@ -1,0 +1,25 @@
+<label for="id_arrival_city">
+    To
+</label>
+
+<select
+        name="arrival_city"
+        id="id_arrival_city"
+        class="form-control airport-select"
+        data-airport-select="true"
+        required
+>
+
+    <option value="">
+        Select destination
+    </option>
+
+    {% for city in cities %}
+
+        <option value="{{ city.id }}">
+            {{ city.airport_code }} — {{ city.name }}, {{ city.country }}
+        </option>
+
+    {% endfor %}
+
+</select>

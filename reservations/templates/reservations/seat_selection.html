@@ -1,0 +1,320 @@
+{% extends "reservations/base.html" %}
+
+{% block title %}
+    Choose Seats | AeroReserve
+{% endblock %}
+
+{% block content %}
+
+    <section class="page-section">
+
+        <div class="container">
+
+            <a
+                    href="{% url 'reservations:home' %}"
+                    class="back-link"
+            >
+                ← Back to flight search
+            </a>
+
+
+            <div class="seat-layout">
+
+                <div class="seat-main">
+
+                    <div class="page-heading">
+
+                    <span class="section-label">
+                        SEAT SELECTION
+                    </span>
+
+                        <h1>
+                            Choose {{ passenger_count }}
+                            seat{{ passenger_count|pluralize }}
+                        </h1>
+
+                        <p>
+                            {{ flight.flight_number }}
+                            ·
+                            {{ flight.departure_city.airport_code }}
+                            →
+                            {{ flight.arrival_city.airport_code }}
+                            ·
+                            {{ travel_date|date:"F j, Y" }}
+                        </p>
+
+                    </div>
+
+
+                    <div class="aircraft-card">
+
+                        <div class="aircraft-front">
+                            FRONT
+                        </div>
+
+
+                        <div class="seat-selection-progress">
+
+                            <strong id="seat-selection-count">
+                                0 of {{ passenger_count }} selected
+                            </strong>
+
+                            <span id="selected-seat-list">
+                            Choose your seats below
+                        </span>
+
+                        </div>
+
+
+                        <div class="seat-legend">
+
+                        <span>
+                            <i class="seat-demo available"></i>
+                            Available
+                        </span>
+
+                            <span>
+                            <i class="seat-demo selected"></i>
+                            Selected
+                        </span>
+
+                            <span>
+                            <i class="seat-demo unavailable"></i>
+                            Occupied
+                        </span>
+
+                        </div>
+
+
+                        <div
+                                class="seat-map"
+                                data-seat-map
+                                data-passenger-count="{{ passenger_count }}"
+                        >
+
+                            <div class="seat-map-header">
+
+                                <span></span>
+                                <span>A</span>
+                                <span>B</span>
+                                <span class="aisle-label"></span>
+                                <span>C</span>
+                                <span>D</span>
+
+                            </div>
+
+
+                            {% for row in seat_rows %}
+
+                                <div class="seat-row">
+
+                                    <div class="row-number">
+                                        {{ row.number }}
+                                    </div>
+
+                                    {% for item in row.seats %}
+
+                                        {% if forloop.counter == 3 %}
+                                            <div class="seat-aisle"></div>
+                                        {% endif %}
+
+                                        {% if item.available %}
+
+                                            <button
+                                                    type="button"
+                                                    class="seat seat-available"
+                                                    data-seat-button
+                                                    data-seat-id="{{ item.seat.id }}"
+                                                    data-seat-number="{{ item.seat.seat_number }}"
+                                                    aria-label="Seat {{ item.seat.seat_number }}"
+                                                    aria-pressed="false"
+                                            >
+                                                {{ item.seat.seat_letter }}
+                                            </button>
+
+                                        {% else %}
+
+                                            <button
+                                                    type="button"
+                                                    class="seat seat-unavailable"
+                                                    disabled
+                                                    aria-label="Seat {{ item.seat.seat_number }} occupied"
+                                            >
+                                                {{ item.seat.seat_letter }}
+                                            </button>
+
+                                        {% endif %}
+
+                                    {% endfor %}
+
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <aside class="booking-summary">
+
+                <span class="section-label">
+                    YOUR FLIGHT
+                </span>
+
+                    <h2>
+                        {{ flight.departure_city.airport_code }}
+                        →
+                        {{ flight.arrival_city.airport_code }}
+                    </h2>
+
+
+                    <div class="summary-row">
+                        <span>Airline</span>
+                        <strong>{{ flight.airline.name }}</strong>
+                    </div>
+
+                    <div class="summary-row">
+                        <span>Flight</span>
+                        <strong>{{ flight.flight_number }}</strong>
+                    </div>
+
+                    <div class="summary-row">
+                        <span>Date</span>
+                        <strong>{{ travel_date|date:"M j, Y" }}</strong>
+                    </div>
+
+                    <div class="summary-row">
+                        <span>Cabin</span>
+                        <strong>{{ ticket_class_label }}</strong>
+                    </div>
+
+                    <div class="summary-row">
+                        <span>Passengers</span>
+                        <strong>{{ passenger_count }}</strong>
+                    </div>
+
+                    <div class="summary-row">
+                        <span>Price per person</span>
+
+                        <strong>
+                            ${{ unit_price|floatformat:2 }}
+                        </strong>
+                    </div>
+
+                    <div class="summary-row total-row">
+                        <span>Total</span>
+
+                        <strong>
+                            ${{ total_price|floatformat:2 }}
+                            {{ currency }}
+                        </strong>
+                    </div>
+
+
+                    <form
+                            method="post"
+                            class="booking-form"
+                    >
+
+                        {% csrf_token %}
+
+                        {{ form.seat_ids }}
+
+
+                        <div class="passenger-section">
+
+                            <h3>
+                                Passenger details
+                            </h3>
+
+                            {% for field in form %}
+
+                                {% if field.name != "seat_ids" %}
+
+                                    <div class="passenger-card">
+
+                                        <div class="passenger-card-heading">
+
+                                            <strong>
+                                                {{ field.label }}
+                                            </strong>
+
+                                            <span
+                                                    class="passenger-seat"
+                                                    data-passenger-seat
+                                            >
+                                            No seat
+                                        </span>
+
+                                        </div>
+
+                                        <div class="form-group">
+
+                                            {{ field }}
+
+                                            {% for error in field.errors %}
+                                                <span class="field-error">
+                                                {{ error }}
+                                            </span>
+                                            {% endfor %}
+
+                                        </div>
+
+                                    </div>
+
+                                {% endif %}
+
+                            {% endfor %}
+
+                        </div>
+
+
+                        {% for error in form.seat_ids.errors %}
+                            <div class="field-error seat-error">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+
+
+                        <input
+                                type="hidden"
+                                name="travel_date"
+                                value="{{ travel_date|date:'Y-m-d' }}"
+                        >
+
+                        <input
+                                type="hidden"
+                                name="ticket_class"
+                                value="{{ ticket_class }}"
+                        >
+
+                        <input
+                                type="hidden"
+                                name="passenger_count"
+                                value="{{ passenger_count }}"
+                        >
+
+
+                        <button
+                                id="confirm-booking-button"
+                                type="submit"
+                                class="button button-primary button-full"
+                                disabled
+                        >
+                            Confirm reservation
+                        </button>
+
+                    </form>
+
+                </aside>
+
+            </div>
+
+        </div>
+
+    </section>
+
+{% endblock %}

@@ -1,0 +1,172 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {% block title %}
+            AeroReserve
+        {% endblock %}
+    </title>
+
+    <link
+            rel="stylesheet"
+            href="{% static 'reservations/css/style.css' %}"
+    >
+
+
+    <script
+            src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
+            integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
+            crossorigin="anonymous"
+            defer
+    ></script>
+
+    <script
+            src="{% static 'reservations/js/app.js' %}"
+            defer
+    ></script>
+
+</head>
+
+
+<body>
+
+<header class="site-header">
+
+    <div class="container nav-container">
+
+        <a
+                href="{% url 'reservations:home' %}"
+                class="brand"
+                aria-label="AeroReserve home"
+        >
+            <span class="brand-mark">
+                A
+            </span>
+
+            <span>
+                AeroReserve
+            </span>
+        </a>
+
+
+        <nav
+                class="nav-links"
+                aria-label="Main navigation"
+        >
+
+            <a href="{% url 'reservations:home' %}">
+                Flights
+            </a>
+
+
+            {% if user.is_authenticated %}
+
+                <a href="{% url 'reservations:booking_history' %}">
+                    My bookings
+                </a>
+
+                <span class="nav-user">
+                    {{ user.first_name|default:user.username }}
+                </span>
+
+                <form
+                        method="post"
+                        action="{% url 'reservations:logout' %}"
+                        class="nav-form"
+                >
+
+                    {% csrf_token %}
+
+                    <button
+                            type="submit"
+                            class="nav-button"
+                    >
+                        Sign out
+                    </button>
+
+                </form>
+
+
+            {% else %}
+
+                <a href="{% url 'reservations:login' %}">
+                    Sign in
+                </a>
+
+                <a
+                        href="{% url 'reservations:register' %}"
+                        class="nav-register"
+                >
+                    Create account
+                </a>
+
+            {% endif %}
+
+        </nav>
+
+    </div>
+
+</header>
+
+
+{% if messages %}
+
+    <div
+            class="message-stack container"
+            aria-live="polite"
+    >
+
+        {% for message in messages %}
+
+            <div class="message-card {{ message.tags }}">
+                {{ message }}
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+{% endif %}
+
+
+<main>
+
+    {% block content %}
+    {% endblock %}
+
+</main>
+
+
+<footer class="site-footer">
+
+    <div class="container footer-content">
+
+        <strong>
+            AeroReserve
+        </strong>
+
+        <span>
+            University web-engineering demonstration.
+            Airport and airline names are real;
+            schedules, availability and fares are
+            generated demo data.
+        </span>
+
+    </div>
+
+</footer>
+
+</body>
+
+</html>

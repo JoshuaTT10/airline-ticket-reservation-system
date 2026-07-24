@@ -1,0 +1,213 @@
+{% extends "reservations/base.html" %}
+
+{% block title %}
+    Booking Confirmed | AeroReserve
+{% endblock %}
+
+{% block content %}
+
+    <section class="confirmation-section">
+
+        <div class="container confirmation-container">
+
+            <div class="success-icon">
+                ✓
+            </div>
+
+            <span class="section-label">
+            RESERVATION COMPLETE
+        </span>
+
+            <h1>
+                You're ready for takeoff.
+            </h1>
+
+            <p class="confirmation-intro">
+                Your reservation for
+                {{ reservation.passenger_count }}
+                passenger{{ reservation.passenger_count|pluralize }}
+                has been successfully completed.
+            </p>
+
+
+            <article class="ticket-card">
+
+                <div class="ticket-top">
+
+                    <div>
+                    <span class="ticket-label">
+                        BOOKING REFERENCE
+                    </span>
+
+                        <strong class="booking-reference">
+                            {{ reservation.booking_reference }}
+                        </strong>
+                    </div>
+
+                    <div class="ticket-airline">
+                        {{ reservation.flight.airline.name }}
+                    </div>
+
+                </div>
+
+
+                <div class="ticket-route">
+
+                    <div>
+                        <strong>
+                            {{ reservation.flight.departure_city.airport_code }}
+                        </strong>
+
+                        <span>
+                        {{ reservation.flight.departure_city.name }}
+                    </span>
+                    </div>
+
+
+                    <div class="ticket-plane">
+                        ───── ✈ ─────
+                    </div>
+
+
+                    <div>
+                        <strong>
+                            {{ reservation.flight.arrival_city.airport_code }}
+                        </strong>
+
+                        <span>
+                        {{ reservation.flight.arrival_city.name }}
+                    </span>
+                    </div>
+
+                </div>
+
+
+                <div class="ticket-details">
+
+                    <div>
+                        <span>Date</span>
+
+                        <strong>
+                            {{ reservation.travel_date|date:"M j, Y" }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>Flight</span>
+
+                        <strong>
+                            {{ reservation.flight.flight_number }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>Airline</span>
+
+                        <strong>
+                            {{ reservation.flight.airline.name }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>Departure</span>
+
+                        <strong>
+                            {{ reservation.flight.departure_time|time:"H:i" }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>Arrival</span>
+
+                        <strong>
+                            {{ reservation.flight.arrival_time|time:"H:i" }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>Total</span>
+
+                        <strong>
+                            ${{ reservation.total_price|floatformat:2 }}
+                            {{ reservation.currency }}
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <div class="passenger-ticket-list">
+
+                    {% for booking in passenger_bookings %}
+
+                        <div class="passenger-ticket-row">
+
+                            <div>
+                                <span>Passenger {{ forloop.counter }}</span>
+
+                                <strong>
+                                    {{ booking.passenger_name }}
+                                </strong>
+                            </div>
+
+                            <div>
+                                <span>Seat</span>
+
+                                <strong>
+                                    {{ booking.seat.seat_number }}
+                                </strong>
+                            </div>
+
+                            <div>
+                                <span>Cabin</span>
+
+                                <strong>
+                                    {{ booking.seat.get_cabin_class_display }}
+                                </strong>
+                            </div>
+
+                            <div>
+                                <span>Fare</span>
+
+                                <strong>
+                                    ${{ booking.price|floatformat:2 }}
+                                </strong>
+                            </div>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </article>
+
+
+            <div class="confirmation-actions">
+
+                <a
+                        href="{% url 'reservations:home' %}"
+                        class="button button-primary"
+                >
+                    Search another flight
+                </a>
+
+
+                {% if user.is_authenticated %}
+
+                    <a
+                            href="{% url 'reservations:booking_history' %}"
+                            class="button button-secondary"
+                    >
+                        View my bookings
+                    </a>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </section>
+
+{% endblock %}

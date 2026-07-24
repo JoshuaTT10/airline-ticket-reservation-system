@@ -1,0 +1,143 @@
+{% extends "reservations/base.html" %}
+
+{% block title %}
+    My Bookings | AeroReserve
+{% endblock %}
+
+
+{% block content %}
+
+    <section class="page-section">
+
+        <div class="container">
+
+            <div class="page-heading">
+
+            <span class="section-label">
+                MY TRIPS
+            </span>
+
+                <h1>
+                    Your bookings
+                </h1>
+
+                <p>
+                    Review your current and previous flight reservations.
+                </p>
+
+            </div>
+
+
+            {% if reservations %}
+
+                <div class="booking-list">
+
+                    {% for reservation in reservations %}
+
+                        <article class="history-card">
+
+                            <div class="history-date">
+
+                            <span>
+                                {{ reservation.travel_date|date:"M" }}
+                            </span>
+
+                                <strong>
+                                    {{ reservation.travel_date|date:"d" }}
+                                </strong>
+
+                            </div>
+
+
+                            <div class="history-route">
+
+                                <strong>
+                                    {{ reservation.flight.departure_city.airport_code }}
+                                    →
+                                    {{ reservation.flight.arrival_city.airport_code }}
+                                </strong>
+
+
+                                <span>
+                                {{ reservation.flight.airline.name }}
+                                ·
+                                {{ reservation.flight.flight_number }}
+                            </span>
+
+
+                                <span>
+                                {{ reservation.booking_reference }}
+                                ·
+                                {{ reservation.passenger_count }}
+                                passenger{{ reservation.passenger_count|pluralize }}
+                                ·
+                                {{ reservation.get_cabin_class_display }}
+                            </span>
+
+                            </div>
+
+
+                            <div class="history-seat">
+
+                            <span>
+                                Total
+                            </span>
+
+                                <strong>
+                                    ${{ reservation.total_price|floatformat:2 }}
+                                </strong>
+
+                                <small>
+                                    {{ reservation.currency }}
+                                </small>
+
+                            </div>
+
+
+                            <a
+                                    href="{% url 'reservations:reservation_confirmation' reservation.booking_reference %}"
+                                    class="button button-secondary button-small"
+                            >
+                                Details
+                            </a>
+
+                        </article>
+
+                    {% endfor %}
+
+                </div>
+
+
+            {% else %}
+
+                <div class="empty-search-state">
+
+                    <div class="empty-icon">
+                        ✈
+                    </div>
+
+                    <h3>
+                        No bookings yet
+                    </h3>
+
+                    <p>
+                        Your reservations will appear here
+                        after you book a flight.
+                    </p>
+
+                    <a
+                            href="{% url 'reservations:home' %}"
+                            class="button button-primary"
+                    >
+                        Search flights
+                    </a>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+{% endblock %}

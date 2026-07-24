@@ -1,0 +1,186 @@
+<div class="results-section">
+
+    {% if form.non_field_errors %}
+        <div class="error-panel">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+
+    {% if form.errors %}
+        {% for field in form %}
+            {% for error in field.errors %}
+                <div class="error-panel">
+                    {{ field.label }}: {{ error }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+    {% endif %}
+
+
+    {% if searched %}
+
+        <div class="results-heading">
+
+            <div>
+                <span class="section-label">
+                    AVAILABLE FLIGHTS
+                </span>
+
+                <h2>
+                    {% if results|length == 1 %}
+                        1 flight found
+                    {% else %}
+                        {{ results|length }} flights found
+                    {% endif %}
+                </h2>
+            </div>
+
+            <div class="results-meta">
+                {{ travel_date|date:"D, M j" }}
+                ·
+                {{ ticket_class_label }}
+                ·
+                {{ passenger_count }}
+                passenger{{ passenger_count|pluralize }}
+            </div>
+
+        </div>
+
+
+        {% if results %}
+
+            <div class="flight-list">
+
+                {% for item in results %}
+
+                    <article class="flight-card">
+
+                        <div class="airline-column">
+
+                            <div class="airline-logo">
+                                {{ item.flight.airline.airline_code }}
+                            </div>
+
+                            <div>
+                                <strong>
+                                    {{ item.flight.airline.name }}
+                                </strong>
+
+                                <span>
+                                    {{ item.flight.flight_number }}
+                                </span>
+                            </div>
+
+                        </div>
+
+
+                        <div class="flight-time-column">
+
+                            <div class="flight-point">
+                                <strong>
+                                    {{ item.flight.departure_time|time:"H:i" }}
+                                </strong>
+
+                                <span>
+                                    {{ item.flight.departure_city.airport_code }}
+                                </span>
+                            </div>
+
+
+                            <div class="flight-path">
+
+                                <span></span>
+
+                                <div>
+                                    Direct
+                                </div>
+
+                                <span></span>
+
+                            </div>
+
+
+                            <div class="flight-point">
+                                <strong>
+                                    {{ item.flight.arrival_time|time:"H:i" }}
+                                </strong>
+
+                                <span>
+                                    {{ item.flight.arrival_city.airport_code }}
+                                </span>
+                            </div>
+
+                        </div>
+
+
+                        <div class="availability-column">
+
+                            <div class="flight-price">
+
+                                <span>
+                                    Total
+                                </span>
+
+                                <strong>
+                                    ${{ item.total_price|floatformat:0 }}
+                                </strong>
+
+                                <small>
+                                    ${{ item.price|floatformat:0 }}
+                                    ×
+                                    {{ passenger_count }}
+                                </small>
+
+                            </div>
+
+
+                            <span class="availability-label">
+                                {{ item.available_seats }}
+                                seats available
+                            </span>
+
+
+                            <a
+                                    href="{% url 'reservations:seat_selection' item.flight.id %}?date={{ travel_date|date:'Y-m-d' }}&ticket_class={{ ticket_class }}&passengers={{ passenger_count }}"
+                                    class="button button-secondary"
+                            >
+                                Select flight
+                            </a>
+
+                        </div>
+
+                    </article>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-search-state">
+
+                <div class="empty-icon">
+                    ◌
+                </div>
+
+                <h3>
+                    No suitable flights
+                </h3>
+
+                <p>
+                    We could not find a flight with enough available
+                    {{ ticket_class_label|lower }} seats for
+                    {{ passenger_count }}
+                    passenger{{ passenger_count|pluralize }}.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    {% endif %}
+
+</div>

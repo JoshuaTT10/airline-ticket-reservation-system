@@ -1,0 +1,234 @@
+{% extends "reservations/base.html" %}
+
+{% block title %}
+    Search Flights | AeroReserve
+{% endblock %}
+
+
+{% block content %}
+
+    <section class="hero-section">
+
+        <div class="container hero-content">
+
+            <div class="hero-copy">
+
+            <span class="hero-kicker">
+                FLIGHTS WITHOUT THE FRICTION
+            </span>
+
+                <h1>
+                    Where are you flying next?
+                </h1>
+
+                <p>
+                    Search global routes, compare fares and reserve seats
+                    for up to five passengers in one booking.
+                </p>
+
+            </div>
+
+
+            <div class="search-card">
+
+                <form
+                        method="get"
+                        action="{% url 'reservations:flight_search' %}"
+                        class="flight-search-form"
+                        hx-get="{% url 'reservations:flight_search' %}"
+                        hx-target="#flight-results"
+                        hx-swap="innerHTML"
+                        hx-indicator="#flight-search-indicator"
+                >
+
+                    <div class="form-group airport-field">
+
+                        <label for="{{ form.departure_city.id_for_label }}">
+                            {{ form.departure_city.label }}
+                        </label>
+
+                        {{ form.departure_city }}
+
+                        {% for error in form.departure_city.errors %}
+                            <span class="field-error">
+                            {{ error }}
+                        </span>
+                        {% endfor %}
+
+                    </div>
+
+
+                    <div
+                            class="route-arrow"
+                            aria-hidden="true"
+                    >
+                        →
+                    </div>
+
+
+                    <div
+                            class="form-group airport-field"
+                            id="destination-select-container"
+                    >
+
+                        <label for="{{ form.arrival_city.id_for_label }}">
+                            {{ form.arrival_city.label }}
+                        </label>
+
+                        {{ form.arrival_city }}
+
+                        {% for error in form.arrival_city.errors %}
+                            <span class="field-error">
+                            {{ error }}
+                        </span>
+                        {% endfor %}
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="{{ form.travel_date.id_for_label }}">
+                            {{ form.travel_date.label }}
+                        </label>
+
+                        {{ form.travel_date }}
+
+                        {% for error in form.travel_date.errors %}
+                            <span class="field-error">
+                            {{ error }}
+                        </span>
+                        {% endfor %}
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="{{ form.ticket_class.id_for_label }}">
+                            {{ form.ticket_class.label }}
+                        </label>
+
+                        {{ form.ticket_class }}
+
+                        {% for error in form.ticket_class.errors %}
+                            <span class="field-error">
+                            {{ error }}
+                        </span>
+                        {% endfor %}
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="{{ form.passenger_count.id_for_label }}">
+                            {{ form.passenger_count.label }}
+                        </label>
+
+                        {{ form.passenger_count }}
+
+                        {% for error in form.passenger_count.errors %}
+                            <span class="field-error">
+                            {{ error }}
+                        </span>
+                        {% endfor %}
+
+                    </div>
+
+
+                    <button
+                            type="submit"
+                            class="button button-primary search-button"
+                    >
+                        Search flights
+                    </button>
+
+                </form>
+
+
+                <div
+                        id="flight-search-indicator"
+                        class="search-loading htmx-indicator"
+                        aria-live="polite"
+                >
+                    Searching available flights…
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <section class="home-content">
+
+        <div class="container">
+
+            <div id="flight-results">
+            </div>
+
+
+            <div class="feature-grid">
+
+                <article class="feature-card">
+
+                <span>
+                    01
+                </span>
+
+                    <h3>
+                        Search
+                    </h3>
+
+                    <p>
+                        Find direct demo routes across 50 major
+                        international airports.
+                    </p>
+
+                </article>
+
+
+                <article class="feature-card">
+
+                <span>
+                    02
+                </span>
+
+                    <h3>
+                        Choose
+                    </h3>
+
+                    <p>
+                        Compare fares and pick seats from a live
+                        availability map.
+                    </p>
+
+                </article>
+
+
+                <article class="feature-card">
+
+                <span>
+                    03
+                </span>
+
+                    <h3>
+                        Reserve
+                    </h3>
+
+                    <p>
+                        Book up to five passengers under one
+                        reservation reference.
+                    </p>
+
+                </article>
+
+            </div>
+
+        </div>
+
+    </section>
+
+{% endblock %}
