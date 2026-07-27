@@ -1,8 +1,9 @@
 {% extends "reservations/base.html" %}
 
 {% block title %}
-    Booking Confirmed | AeroReserve
+    Reservation {{ reservation.booking_reference }} | AeroReserve
 {% endblock %}
+
 
 {% block content %}
 
@@ -10,31 +11,56 @@
 
         <div class="container confirmation-container">
 
-            <div class="success-icon">
-                ✓
-            </div>
 
-            <span class="section-label">
-            RESERVATION COMPLETE
-        </span>
+            {% if reservation.is_cancelled %}
 
-            <h1>
-                You're ready for takeoff.
-            </h1>
+                <div class="success-icon" style="background: #fef2f2; color: #b91c1c;">
+                    ×
+                </div>
 
-            <p class="confirmation-intro">
-                Your reservation for
-                {{ reservation.passenger_count }}
-                passenger{{ reservation.passenger_count|pluralize }}
-                has been successfully completed.
-            </p>
+                <span class="section-label">
+                RESERVATION CANCELLED
+            </span>
+
+                <h1>
+                    Your reservation was cancelled
+                </h1>
+
+                <p class="confirmation-intro">
+                    This reservation is no longer active.
+                    The seats have been released and are available
+                    for other passengers to reserve.
+                </p>
+
+            {% else %}
+
+                <div class="success-icon">
+                    ✓
+                </div>
+
+                <span class="section-label">
+                RESERVATION CONFIRMED
+            </span>
+
+                <h1>
+                    You're all set
+                </h1>
+
+                <p class="confirmation-intro">
+                    Your AeroReserve booking has been confirmed.
+                    Keep your booking reference for your records.
+                </p>
+
+            {% endif %}
 
 
             <article class="ticket-card">
 
+
                 <div class="ticket-top">
 
                     <div>
+
                     <span class="ticket-label">
                         BOOKING REFERENCE
                     </span>
@@ -42,10 +68,37 @@
                         <strong class="booking-reference">
                             {{ reservation.booking_reference }}
                         </strong>
+
                     </div>
 
+
+                    <div>
+
+                        {% if reservation.is_cancelled %}
+
+                            <span class="reservation-status reservation-status-cancelled">
+                            Cancelled
+                        </span>
+
+                        {% else %}
+
+                            <span class="reservation-status reservation-status-confirmed">
+                            Confirmed
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+
                     <div class="ticket-airline">
+
                         {{ reservation.flight.airline.name }}
+
+                        <br>
+
+                        {{ reservation.flight.flight_number }}
+
                     </div>
 
                 </div>
@@ -53,7 +106,9 @@
 
                 <div class="ticket-route">
 
+
                     <div>
+
                         <strong>
                             {{ reservation.flight.departure_city.airport_code }}
                         </strong>
@@ -61,15 +116,17 @@
                         <span>
                         {{ reservation.flight.departure_city.name }}
                     </span>
+
                     </div>
 
 
                     <div class="ticket-plane">
-                        ───── ✈ ─────
+                        ─── ✈ ───
                     </div>
 
 
                     <div>
+
                         <strong>
                             {{ reservation.flight.arrival_city.airport_code }}
                         </strong>
@@ -77,117 +134,174 @@
                         <span>
                         {{ reservation.flight.arrival_city.name }}
                     </span>
+
                     </div>
+
 
                 </div>
 
 
                 <div class="ticket-details">
 
+
                     <div>
-                        <span>Date</span>
+
+                    <span>
+                        DATE
+                    </span>
 
                         <strong>
-                            {{ reservation.travel_date|date:"M j, Y" }}
+                            {{ reservation.travel_date|date:"M d, Y" }}
                         </strong>
+
                     </div>
 
-                    <div>
-                        <span>Flight</span>
-
-                        <strong>
-                            {{ reservation.flight.flight_number }}
-                        </strong>
-                    </div>
 
                     <div>
-                        <span>Airline</span>
 
-                        <strong>
-                            {{ reservation.flight.airline.name }}
-                        </strong>
-                    </div>
-
-                    <div>
-                        <span>Departure</span>
+                    <span>
+                        DEPARTURE
+                    </span>
 
                         <strong>
                             {{ reservation.flight.departure_time|time:"H:i" }}
                         </strong>
+
                     </div>
 
+
                     <div>
-                        <span>Arrival</span>
+
+                    <span>
+                        ARRIVAL
+                    </span>
 
                         <strong>
                             {{ reservation.flight.arrival_time|time:"H:i" }}
                         </strong>
+
                     </div>
 
+
                     <div>
-                        <span>Total</span>
+
+                    <span>
+                        CABIN
+                    </span>
+
+                        <strong>
+                            {{ reservation.get_cabin_class_display }}
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                    <span>
+                        PASSENGERS
+                    </span>
+
+                        <strong>
+                            {{ reservation.passenger_count }}
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                    <span>
+                        TOTAL
+                    </span>
 
                         <strong>
                             ${{ reservation.total_price|floatformat:2 }}
-                            {{ reservation.currency }}
                         </strong>
+
                     </div>
+
 
                 </div>
 
 
                 <div class="passenger-ticket-list">
 
-                    {% for booking in passenger_bookings %}
+
+                    {% for booking in reservation.passenger_bookings.all %}
 
                         <div class="passenger-ticket-row">
 
+
                             <div>
-                                <span>Passenger {{ forloop.counter }}</span>
+
+                            <span>
+                                PASSENGER
+                            </span>
 
                                 <strong>
                                     {{ booking.passenger_name }}
                                 </strong>
+
                             </div>
 
+
                             <div>
-                                <span>Seat</span>
+
+                            <span>
+                                SEAT
+                            </span>
 
                                 <strong>
                                     {{ booking.seat.seat_number }}
                                 </strong>
+
                             </div>
 
+
                             <div>
-                                <span>Cabin</span>
+
+                            <span>
+                                CABIN
+                            </span>
 
                                 <strong>
                                     {{ booking.seat.get_cabin_class_display }}
                                 </strong>
+
                             </div>
 
+
                             <div>
-                                <span>Fare</span>
+
+                            <span>
+                                FARE
+                            </span>
 
                                 <strong>
                                     ${{ booking.price|floatformat:2 }}
                                 </strong>
+
                             </div>
+
 
                         </div>
 
                     {% endfor %}
 
+
                 </div>
+
 
             </article>
 
 
             <div class="confirmation-actions">
 
+
                 <a
                         href="{% url 'reservations:home' %}"
-                        class="button button-primary"
+                        class="button button-secondary"
                 >
                     Search another flight
                 </a>
@@ -199,12 +313,56 @@
                             href="{% url 'reservations:booking_history' %}"
                             class="button button-secondary"
                     >
-                        View my bookings
+                        My bookings
                     </a>
 
                 {% endif %}
 
+
+                {% if reservation.can_cancel %}
+
+                    <form
+                            method="post"
+                            action="{% url 'reservations:cancel_reservation' reservation.booking_reference %}"
+                            class="cancel-reservation-form"
+                            onsubmit="return confirm('Are you sure you want to cancel this reservation? This action cannot be undone.');"
+                    >
+
+                        {% csrf_token %}
+
+                        <button
+                                type="submit"
+                                class="button button-danger"
+                        >
+                            Cancel reservation
+                        </button>
+
+                    </form>
+
+                {% endif %}
+
+
             </div>
+
+
+            {% if reservation.is_cancelled %}
+
+                <p
+                        style="
+                    margin-top: 20px;
+                    color: var(--muted);
+                    font-size: 0.82rem;
+                "
+                >
+                    Cancelled
+                    {% if reservation.cancelled_at %}
+                        on {{ reservation.cancelled_at|date:"M d, Y" }}
+                        at {{ reservation.cancelled_at|time:"H:i" }}.
+                    {% endif %}
+                </p>
+
+            {% endif %}
+
 
         </div>
 

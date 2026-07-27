@@ -2637,3 +2637,53 @@ select.form-control {
 .auth-secondary-action a:hover {
     text-decoration: underline;
 }
+
+.button-danger {
+    background: #dc2626;
+    color: #ffffff;
+
+    box-shadow:
+            0 10px 22px
+            rgba(220, 38, 38, 0.18);
+}
+
+.button-danger:hover {
+    background: #b91c1c;
+
+    box-shadow:
+            0 14px 28px
+            rgba(220, 38, 38, 0.24);
+}
+
+.cancel-reservation-form {
+    display: inline-flex;
+}
+
+.reservation-status {
+    display: inline-flex;
+
+    align-items: center;
+
+    width: fit-content;
+
+    padding: 5px 10px;
+
+    border-radius: 999px;
+
+    font-size: 0.68rem;
+    font-weight: 800;
+
+    letter-spacing: 0.04em;
+
+    text-transform: uppercase;
+}
+
+.reservation-status-confirmed {
+    background: #ecfdf5;
+    color: #15803d;
+}
+
+.reservation-status-cancelled {
+    background: #fef2f2;
+    color: #b91c1c;
+}
