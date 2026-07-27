@@ -73,6 +73,12 @@
                     {% endfor %}
                 </div>
 
+                <div class="auth-secondary-action">
+                    <a href="{% url 'reservations:password_reset' %}">
+                        Forgot password?
+                    </a>
+                </div>
+
                 <button
                         type="submit"
                         class="button button-primary button-full"

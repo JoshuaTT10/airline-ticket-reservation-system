@@ -4,6 +4,8 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import (
     AuthenticationForm,
+    PasswordResetForm,
+    SetPasswordForm,
     UserCreationForm,
 )
 from django.contrib.auth.models import User
@@ -316,7 +318,7 @@ class StyledAuthenticationForm(AuthenticationForm):
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
-                "placeholder": ("Username or email"),
+                "placeholder": "Username or email",
                 "autocomplete": "username",
             }
         ),
@@ -328,14 +330,13 @@ class StyledAuthenticationForm(AuthenticationForm):
             attrs={
                 "class": "form-control",
                 "placeholder": "Password",
-                "autocomplete": ("current-password"),
+                "autocomplete": "current-password",
             }
         ),
     )
 
     def clean(self):
         identifier = self.cleaned_data.get("username")
-
         password = self.cleaned_data.get("password")
 
         if identifier and password:
@@ -353,10 +354,44 @@ class StyledAuthenticationForm(AuthenticationForm):
 
             if self.user_cache is None:
                 raise forms.ValidationError(
-                    ("The username/email or password is incorrect."),
+                    "The username/email or password is incorrect.",
                     code="invalid_login",
                 )
 
             self.confirm_login_allowed(self.user_cache)
 
         return self.cleaned_data
+
+
+class StyledPasswordResetForm(PasswordResetForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["email"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "you@example.com",
+                "autocomplete": "email",
+            }
+        )
+
+
+class StyledSetPasswordForm(SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["new_password1"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "New password",
+                "autocomplete": "new-password",
+            }
+        )
+
+        self.fields["new_password2"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "Confirm new password",
+                "autocomplete": "new-password",
+            }
+        )
