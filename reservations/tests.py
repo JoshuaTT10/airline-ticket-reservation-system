@@ -3,11 +3,15 @@ from decimal import Decimal
 
 import pytest
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.core import mail
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 
 from .forms import (
     FlightSearchForm,
@@ -574,3 +578,281 @@ class AeroReserveTestCase(TestCase):
         assert response.status_code == 200
 
         assert response.json() == {"status": "ok"}
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+)
+class PasswordResetTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="resetuser",
+            email="reset@example.com",
+            password="OriginalPass123!",
+            first_name="Reset",
+            last_name="User",
+        )
+
+        self.reset_url = reverse(
+            "reservations:password_reset",
+        )
+
+        self.done_url = reverse(
+            "reservations:password_reset_done",
+        )
+
+        self.complete_url = reverse(
+            "reservations:password_reset_complete",
+        )
+
+    def valid_reset_url(self):
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+
+        token = default_token_generator.make_token(self.user)
+
+        return reverse(
+            "reservations:password_reset_confirm",
+            kwargs={
+                "uidb64": uid,
+                "token": token,
+            },
+        )
+
+    def test_password_reset_page_loads(self):
+        response = self.client.get(self.reset_url)
+
+        assert response.status_code == 200
+        assert b"Forgot your password?" in response.content
+
+    def test_password_reset_uses_correct_template(self):
+        response = self.client.get(self.reset_url)
+
+        self.assertTemplateUsed(
+            response,
+            "reservations/password_reset_form.html",
+        )
+
+    def test_login_page_contains_forgot_password_link(self):
+        response = self.client.get(reverse("reservations:login"))
+
+        assert response.status_code == 200
+
+        assert reverse("reservations:password_reset") in response.content.decode()
+
+        assert b"Forgot password?" in response.content
+
+    def test_registered_email_redirects_to_done_page(self):
+        response = self.client.post(
+            self.reset_url,
+            {
+                "email": self.user.email,
+            },
+        )
+
+        assert response.status_code == 302
+        assert response.url == self.done_url
+
+    def test_registered_email_sends_one_email(self):
+        self.client.post(
+            self.reset_url,
+            {
+                "email": self.user.email,
+            },
+        )
+
+        assert len(mail.outbox) == 1
+
+    def test_password_reset_email_has_correct_recipient(self):
+        self.client.post(
+            self.reset_url,
+            {
+                "email": self.user.email,
+            },
+        )
+
+        assert len(mail.outbox) == 1
+        assert mail.outbox[0].to == ["reset@example.com"]
+
+    def test_password_reset_email_has_correct_subject(self):
+        self.client.post(
+            self.reset_url,
+            {
+                "email": self.user.email,
+            },
+        )
+
+        assert mail.outbox[0].subject == ("Reset your AeroReserve password")
+
+    def test_password_reset_email_contains_reset_link(self):
+        self.client.post(
+            self.reset_url,
+            {
+                "email": self.user.email,
+            },
+        )
+
+        message = mail.outbox[0].body
+
+        assert "/reset/" in message
+        assert "AeroReserve" in message
+
+    def test_password_reset_email_is_case_insensitive(self):
+        response = self.client.post(
+            self.reset_url,
+            {
+                "email": "RESET@EXAMPLE.COM",
+            },
+        )
+
+        assert response.status_code == 302
+        assert response.url == self.done_url
+        assert len(mail.outbox) == 1
+
+    def test_unknown_email_uses_same_success_page(self):
+        response = self.client.post(
+            self.reset_url,
+            {
+                "email": "nobody@example.com",
+            },
+        )
+
+        assert response.status_code == 302
+        assert response.url == self.done_url
+
+    def test_unknown_email_does_not_send_email(self):
+        self.client.post(
+            self.reset_url,
+            {
+                "email": "nobody@example.com",
+            },
+        )
+
+        assert len(mail.outbox) == 0
+
+    def test_inactive_user_does_not_receive_reset_email(self):
+        self.user.is_active = False
+        self.user.save()
+
+        response = self.client.post(
+            self.reset_url,
+            {
+                "email": self.user.email,
+            },
+        )
+
+        assert response.status_code == 302
+        assert response.url == self.done_url
+        assert len(mail.outbox) == 0
+
+    def test_reset_done_page_loads(self):
+        response = self.client.get(self.done_url)
+
+        assert response.status_code == 200
+
+        assert b"Reset link requested" in response.content
+
+    def test_valid_reset_token_redirects_to_secure_reset_url(self):
+        response = self.client.get(self.valid_reset_url())
+
+        assert response.status_code == 302
+
+        assert "set-password" in response.url
+
+    def test_invalid_reset_token_is_rejected(self):
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+
+        response = self.client.get(
+            reverse(
+                "reservations:password_reset_confirm",
+                kwargs={
+                    "uidb64": uid,
+                    "token": "invalid-token",
+                },
+            )
+        )
+
+        assert response.status_code == 200
+
+        assert b"This reset link can't be used" in response.content
+
+    def test_invalid_user_id_is_rejected(self):
+        response = self.client.get(
+            reverse(
+                "reservations:password_reset_confirm",
+                kwargs={
+                    "uidb64": "invalid-user",
+                    "token": "invalid-token",
+                },
+            )
+        )
+
+        assert response.status_code == 200
+
+        assert b"This reset link can't be used" in response.content
+
+    def test_complete_password_reset_changes_password(self):
+        first_response = self.client.get(self.valid_reset_url())
+
+        assert first_response.status_code == 302
+
+        response = self.client.post(
+            first_response.url,
+            {
+                "new_password1": "NewStrongPass456!",
+                "new_password2": "NewStrongPass456!",
+            },
+        )
+
+        assert response.status_code == 302
+        assert response.url == self.complete_url
+
+        self.user.refresh_from_db()
+
+        assert self.user.check_password("NewStrongPass456!")
+
+        assert not self.user.check_password("OriginalPass123!")
+
+    def test_password_reset_rejects_mismatched_passwords(self):
+        first_response = self.client.get(self.valid_reset_url())
+
+        response = self.client.post(
+            first_response.url,
+            {
+                "new_password1": "NewStrongPass456!",
+                "new_password2": "DifferentPass456!",
+            },
+        )
+
+        assert response.status_code == 200
+
+        assert "new_password2" in response.context["form"].errors
+
+        self.user.refresh_from_db()
+
+        assert self.user.check_password("OriginalPass123!")
+
+    def test_password_reset_complete_page_loads(self):
+        response = self.client.get(self.complete_url)
+
+        assert response.status_code == 200
+
+        assert b"You're all set" in response.content
+
+    def test_used_reset_token_cannot_reset_password_again(self):
+        reset_url = self.valid_reset_url()
+
+        first_response = self.client.get(reset_url)
+
+        self.client.post(
+            first_response.url,
+            {
+                "new_password1": "NewStrongPass456!",
+                "new_password2": "NewStrongPass456!",
+            },
+        )
+
+        response = self.client.get(reset_url)
+
+        assert response.status_code == 200
+
+        assert b"This reset link can't be used" in response.content
