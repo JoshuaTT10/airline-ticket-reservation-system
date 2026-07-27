@@ -47,6 +47,7 @@ def _available_seat_count(
     booked_seat_ids = Booking.objects.filter(
         flight=flight,
         travel_date=travel_date,
+        is_cancelled=False,
     ).values_list(
         "seat_id",
         flat=True,
@@ -72,6 +73,7 @@ def _build_seat_rows(
         Booking.objects.filter(
             flight=flight,
             travel_date=travel_date,
+            is_cancelled=False,
         ).values_list(
             "seat_id",
             flat=True,

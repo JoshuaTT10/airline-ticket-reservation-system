@@ -201,6 +201,7 @@ class MultiPassengerBookingForm(forms.Form):
         booked_seat_ids = Booking.objects.filter(
             flight=self.flight,
             travel_date=self.travel_date,
+            is_cancelled=False,
         ).values_list(
             "seat_id",
             flat=True,
