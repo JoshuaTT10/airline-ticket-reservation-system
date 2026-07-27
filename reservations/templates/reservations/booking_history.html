@@ -74,6 +74,25 @@
                                 {{ reservation.get_cabin_class_display }}
                             </span>
 
+
+                                <div style="margin-top: 8px;">
+
+                                    {% if reservation.is_cancelled %}
+
+                                        <span class="reservation-status reservation-status-cancelled">
+                                        Cancelled
+                                    </span>
+
+                                    {% else %}
+
+                                        <span class="reservation-status reservation-status-confirmed">
+                                        Confirmed
+                                    </span>
+
+                                    {% endif %}
+
+                                </div>
+
                             </div>
 
 
