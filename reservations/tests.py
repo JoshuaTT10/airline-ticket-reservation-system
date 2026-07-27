@@ -856,3 +856,449 @@ class PasswordResetTests(TestCase):
         assert response.status_code == 200
 
         assert b"This reset link can't be used" in response.content
+
+
+class ReservationCancellationTests(TestCase):
+    def setUp(self):
+        self.today = timezone.localdate()
+        self.travel_date = self.today + timedelta(days=1)
+
+        self.departure = City.objects.create(
+            name="Cancellation Tokyo",
+            airport_code="CTK",
+            country="Japan",
+        )
+
+        self.arrival = City.objects.create(
+            name="Cancellation London",
+            airport_code="CLN",
+            country="United Kingdom",
+        )
+
+        self.airline = Airline.objects.create(
+            name="Cancellation Airways",
+            airline_code="CX",
+        )
+
+        self.flight = Flight.objects.create(
+            airline=self.airline,
+            departure_city=self.departure,
+            arrival_city=self.arrival,
+            flight_number="CX100",
+            departure_time=time(9, 0),
+            arrival_time=time(17, 0),
+            economy_price=Decimal("500.00"),
+            business_price=Decimal("1200.00"),
+            currency="USD",
+        )
+
+        self.seat = Seat.objects.create(
+            flight=self.flight,
+            row_number=4,
+            seat_letter="A",
+            cabin_class=Seat.CabinClass.ECONOMY,
+        )
+
+        self.second_seat = Seat.objects.create(
+            flight=self.flight,
+            row_number=4,
+            seat_letter="B",
+            cabin_class=Seat.CabinClass.ECONOMY,
+        )
+
+        self.user = User.objects.create_user(
+            username="canceluser",
+            email="cancel@example.com",
+            password="StrongPass123!",
+        )
+
+        self.other_user = User.objects.create_user(
+            username="othercanceluser",
+            email="othercancel@example.com",
+            password="StrongPass123!",
+        )
+
+    def create_reservation(
+        self,
+        *,
+        user=None,
+        seat=None,
+        travel_date=None,
+    ):
+        seat = seat or self.seat
+        travel_date = travel_date or self.travel_date
+
+        reservation = Reservation.objects.create(
+            user=user,
+            flight=self.flight,
+            travel_date=travel_date,
+            cabin_class=Seat.CabinClass.ECONOMY,
+            total_price=Decimal("500.00"),
+            currency="USD",
+        )
+
+        booking = Booking.objects.create(
+            reservation=reservation,
+            user=user,
+            flight=self.flight,
+            seat=seat,
+            travel_date=travel_date,
+            passenger_name="Cancellation Passenger",
+            price=Decimal("500.00"),
+            currency="USD",
+        )
+
+        return reservation, booking
+
+    def cancel_url(self, reservation):
+        return reverse(
+            "reservations:cancel_reservation",
+            kwargs={
+                "booking_reference": reservation.booking_reference,
+            },
+        )
+
+    def test_confirmed_reservation_is_not_cancelled(self):
+        reservation, _ = self.create_reservation(
+            user=self.user,
+        )
+
+        assert reservation.status == Reservation.Status.CONFIRMED
+        assert reservation.is_cancelled is False
+
+    def test_confirmed_future_reservation_can_cancel(self):
+        reservation, _ = self.create_reservation(
+            user=self.user,
+        )
+
+        assert reservation.can_cancel is True
+
+    def test_cancelled_reservation_cannot_cancel_again(self):
+        reservation, _ = self.create_reservation(
+            user=self.user,
+        )
+
+        reservation.status = Reservation.Status.CANCELLED
+        reservation.save()
+
+        assert reservation.can_cancel is False
+
+    def test_past_reservation_cannot_cancel(self):
+        reservation, _ = self.create_reservation(
+            user=self.user,
+            travel_date=self.today - timedelta(days=1),
+        )
+
+        assert reservation.can_cancel is False
+
+    def test_cancel_endpoint_rejects_get(self):
+        reservation, _ = self.create_reservation(
+            user=self.user,
+        )
+
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.cancel_url(reservation))
+
+        assert response.status_code == 405
+
+        reservation.refresh_from_db()
+
+        assert reservation.status == Reservation.Status.CONFIRMED
+
+    def test_owner_can_cancel_reservation(self):
+        reservation, _ = self.create_reservation(
+            user=self.user,
+        )
+
+        self.client.force_login(self.user)
+
+        response = self.client.post(self.cancel_url(reservation))
+
+        assert response.status_code == 302
+
+        reservation.refresh_from_db()
+
+        assert reservation.status == Reservation.Status.CANCELLED
+
+    def test_cancellation_sets_cancelled_timestamp(self):
+        reservation, _ = self.create_reservation(
+            user=self.user,
+        )
+
+        self.client.force_login(self.user)
+
+        self.client.post(self.cancel_url(reservation))
+
+        reservation.refresh_from_db()
+
+        assert reservation.cancelled_at is not None
+
+    def test_cancellation_marks_booking_cancelled(self):
+        reservation, booking = self.create_reservation(
+            user=self.user,
+        )
+
+        self.client.force_login(self.user)
+
+        self.client.post(self.cancel_url(reservation))
+
+        booking.refresh_from_db()
+
+        assert booking.is_cancelled is True
+
+    def test_other_user_cannot_cancel_reservation(self):
+        reservation, _ = self.create_reservation(
+            user=self.user,
+        )
+
+        self.client.force_login(self.other_user)
+
+        response = self.client.post(self.cancel_url(reservation))
+
+        assert response.status_code == 404
+
+        reservation.refresh_from_db()
+
+        assert reservation.status == Reservation.Status.CONFIRMED
+
+    def test_anonymous_user_cannot_cancel_registered_reservation(self):
+        reservation, _ = self.create_reservation(
+            user=self.user,
+        )
+
+        response = self.client.post(self.cancel_url(reservation))
+
+        assert response.status_code == 404
+
+        reservation.refresh_from_db()
+
+        assert reservation.status == Reservation.Status.CONFIRMED
+
+    def test_guest_can_cancel_from_original_session(self):
+        reservation, _ = self.create_reservation()
+
+        session = self.client.session
+        session["guest_reservation_references"] = [reservation.booking_reference]
+        session.save()
+
+        response = self.client.post(self.cancel_url(reservation))
+
+        assert response.status_code == 302
+
+        reservation.refresh_from_db()
+
+        assert reservation.status == Reservation.Status.CANCELLED
+
+    def test_guest_cannot_cancel_without_session_reference(self):
+        reservation, _ = self.create_reservation()
+
+        response = self.client.post(self.cancel_url(reservation))
+
+        assert response.status_code == 404
+
+        reservation.refresh_from_db()
+
+        assert reservation.status == Reservation.Status.CONFIRMED
+
+    def test_guest_cannot_cancel_from_different_session(self):
+        reservation, _ = self.create_reservation()
+
+        session = self.client.session
+        session["guest_reservation_references"] = ["ARWRONG1"]
+        session.save()
+
+        response = self.client.post(self.cancel_url(reservation))
+
+        assert response.status_code == 404
+
+    def test_already_cancelled_reservation_remains_cancelled(self):
+        reservation, booking = self.create_reservation(
+            user=self.user,
+        )
+
+        reservation.status = Reservation.Status.CANCELLED
+        reservation.cancelled_at = timezone.now()
+        reservation.save()
+
+        booking.is_cancelled = True
+        booking.save()
+
+        self.client.force_login(self.user)
+
+        response = self.client.post(self.cancel_url(reservation))
+
+        assert response.status_code == 302
+
+        reservation.refresh_from_db()
+
+        assert reservation.status == Reservation.Status.CANCELLED
+
+    def test_cancelled_seat_can_be_booked_again(self):
+        reservation, booking = self.create_reservation(
+            user=self.user,
+        )
+
+        self.client.force_login(self.user)
+
+        self.client.post(self.cancel_url(reservation))
+
+        booking.refresh_from_db()
+
+        assert booking.is_cancelled is True
+
+        second_reservation = Reservation.objects.create(
+            user=self.other_user,
+            flight=self.flight,
+            travel_date=self.travel_date,
+            cabin_class=Seat.CabinClass.ECONOMY,
+            total_price=Decimal("500.00"),
+            currency="USD",
+        )
+
+        new_booking = Booking.objects.create(
+            reservation=second_reservation,
+            user=self.other_user,
+            flight=self.flight,
+            seat=self.seat,
+            travel_date=self.travel_date,
+            passenger_name="Replacement Passenger",
+            price=Decimal("500.00"),
+            currency="USD",
+        )
+
+        assert new_booking.pk is not None
+
+    def test_active_seat_still_cannot_be_double_booked(self):
+        self.create_reservation(
+            user=self.user,
+        )
+
+        second_reservation = Reservation.objects.create(
+            user=self.other_user,
+            flight=self.flight,
+            travel_date=self.travel_date,
+            cabin_class=Seat.CabinClass.ECONOMY,
+            total_price=Decimal("500.00"),
+            currency="USD",
+        )
+
+        with pytest.raises(IntegrityError):
+            with transaction.atomic():
+                Booking.objects.create(
+                    reservation=second_reservation,
+                    user=self.other_user,
+                    flight=self.flight,
+                    seat=self.seat,
+                    travel_date=self.travel_date,
+                    passenger_name="Duplicate Passenger",
+                    price=Decimal("500.00"),
+                    currency="USD",
+                )
+
+    def test_confirmation_page_shows_cancelled_status(self):
+        reservation, booking = self.create_reservation(
+            user=self.user,
+        )
+
+        reservation.status = Reservation.Status.CANCELLED
+        reservation.cancelled_at = timezone.now()
+        reservation.save()
+
+        booking.is_cancelled = True
+        booking.save()
+
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse(
+                "reservations:reservation_confirmation",
+                kwargs={
+                    "booking_reference": reservation.booking_reference,
+                },
+            )
+        )
+
+        assert response.status_code == 200
+        assert b"Cancelled" in response.content
+
+    def test_confirmation_page_shows_cancel_button_for_active_booking(self):
+        reservation, _ = self.create_reservation(
+            user=self.user,
+        )
+
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse(
+                "reservations:reservation_confirmation",
+                kwargs={
+                    "booking_reference": reservation.booking_reference,
+                },
+            )
+        )
+
+        assert response.status_code == 200
+        assert b"Cancel reservation" in response.content
+
+    def test_confirmation_page_hides_cancel_button_after_cancellation(self):
+        reservation, booking = self.create_reservation(
+            user=self.user,
+        )
+
+        reservation.status = Reservation.Status.CANCELLED
+        reservation.cancelled_at = timezone.now()
+        reservation.save()
+
+        booking.is_cancelled = True
+        booking.save()
+
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse(
+                "reservations:reservation_confirmation",
+                kwargs={
+                    "booking_reference": reservation.booking_reference,
+                },
+            )
+        )
+
+        assert response.status_code == 200
+        assert b"Cancel reservation" not in response.content
+
+    def test_booking_history_keeps_cancelled_reservation(self):
+        reservation, booking = self.create_reservation(
+            user=self.user,
+        )
+
+        reservation.status = Reservation.Status.CANCELLED
+        reservation.cancelled_at = timezone.now()
+        reservation.save()
+
+        booking.is_cancelled = True
+        booking.save()
+
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("reservations:booking_history"))
+
+        content = response.content.decode()
+
+        assert response.status_code == 200
+        assert reservation.booking_reference in content
+        assert "Cancelled" in content
+
+    def test_cancel_unknown_reference_returns_404(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse(
+                "reservations:cancel_reservation",
+                kwargs={
+                    "booking_reference": "ARXXXXXX",
+                },
+            )
+        )
+
+        assert response.status_code == 404
