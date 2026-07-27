@@ -4,6 +4,8 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import (
     AuthenticationForm,
+    PasswordResetForm,
+    SetPasswordForm,
     UserCreationForm,
 )
 from django.contrib.auth.models import User
@@ -321,6 +323,40 @@ class StyledAuthenticationForm(AuthenticationForm):
             }
         ),
     )
+
+
+class StyledPasswordResetForm(PasswordResetForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["email"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "you@example.com",
+                "autocomplete": "email",
+            }
+        )
+
+
+class StyledSetPasswordForm(SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["new_password1"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "New password",
+                "autocomplete": "new-password",
+            }
+        )
+
+        self.fields["new_password2"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "Confirm new password",
+                "autocomplete": "new-password",
+            }
+        )
 
     password = forms.CharField(
         strip=False,
