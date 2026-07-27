@@ -2620,3 +2620,20 @@ select.form-control {
             1fr;
     }
 }
+
+.auth-secondary-action {
+    margin-top: -5px;
+
+    text-align: right;
+}
+
+.auth-secondary-action a {
+    color: var(--primary);
+
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.auth-secondary-action a:hover {
+    text-decoration: underline;
+}
