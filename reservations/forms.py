@@ -318,11 +318,49 @@ class StyledAuthenticationForm(AuthenticationForm):
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
-                "placeholder": ("Username or email"),
+                "placeholder": "Username or email",
                 "autocomplete": "username",
             }
         ),
     )
+
+    password = forms.CharField(
+        strip=False,
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Password",
+                "autocomplete": "current-password",
+            }
+        ),
+    )
+
+    def clean(self):
+        identifier = self.cleaned_data.get("username")
+        password = self.cleaned_data.get("password")
+
+        if identifier and password:
+            identifier = identifier.strip()
+
+            email_user = User.objects.filter(email__iexact=identifier).first()
+
+            username = email_user.username if email_user is not None else identifier
+
+            self.user_cache = authenticate(
+                self.request,
+                username=username,
+                password=password,
+            )
+
+            if self.user_cache is None:
+                raise forms.ValidationError(
+                    "The username/email or password is incorrect.",
+                    code="invalid_login",
+                )
+
+            self.confirm_login_allowed(self.user_cache)
+
+        return self.cleaned_data
 
 
 class StyledPasswordResetForm(PasswordResetForm):
@@ -357,42 +395,3 @@ class StyledSetPasswordForm(SetPasswordForm):
                 "autocomplete": "new-password",
             }
         )
-
-    password = forms.CharField(
-        strip=False,
-        widget=forms.PasswordInput(
-            attrs={
-                "class": "form-control",
-                "placeholder": "Password",
-                "autocomplete": ("current-password"),
-            }
-        ),
-    )
-
-    def clean(self):
-        identifier = self.cleaned_data.get("username")
-
-        password = self.cleaned_data.get("password")
-
-        if identifier and password:
-            identifier = identifier.strip()
-
-            email_user = User.objects.filter(email__iexact=identifier).first()
-
-            username = email_user.username if email_user is not None else identifier
-
-            self.user_cache = authenticate(
-                self.request,
-                username=username,
-                password=password,
-            )
-
-            if self.user_cache is None:
-                raise forms.ValidationError(
-                    ("The username/email or password is incorrect."),
-                    code="invalid_login",
-                )
-
-            self.confirm_login_allowed(self.user_cache)
-
-        return self.cleaned_data
