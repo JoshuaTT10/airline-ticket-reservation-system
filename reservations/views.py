@@ -531,6 +531,74 @@ def reservation_confirmation(
     )
 
 
+@require_POST
+def cancel_reservation(
+    request,
+    booking_reference,
+):
+    reservation = get_object_or_404(
+        Reservation.objects.prefetch_related(
+            "passenger_bookings",
+        ),
+        booking_reference=booking_reference,
+    )
+
+    # Registered reservation:
+    # only the account owner may cancel it.
+    if reservation.user_id is not None:
+        if not request.user.is_authenticated or request.user.id != reservation.user_id:
+            raise Http404
+
+    # Guest reservation:
+    # only the browser session that created it may cancel it.
+    else:
+        allowed_references = request.session.get(
+            "guest_reservation_references",
+            [],
+        )
+
+        if reservation.booking_reference not in allowed_references:
+            raise Http404
+
+    if not reservation.can_cancel:
+        messages.error(
+            request,
+            "This reservation cannot be cancelled.",
+        )
+
+        return redirect(
+            "reservations:reservation_confirmation",
+            booking_reference=reservation.booking_reference,
+        )
+
+    with transaction.atomic():
+        reservation.status = Reservation.Status.CANCELLED
+        reservation.cancelled_at = timezone.now()
+
+        reservation.save(
+            update_fields=[
+                "status",
+                "cancelled_at",
+            ]
+        )
+
+        reservation.passenger_bookings.filter(
+            is_cancelled=False,
+        ).update(
+            is_cancelled=True,
+        )
+
+    messages.success(
+        request,
+        "Your reservation has been cancelled successfully.",
+    )
+
+    return redirect(
+        "reservations:reservation_confirmation",
+        booking_reference=reservation.booking_reference,
+    )
+
+
 @login_required
 @require_GET
 def booking_history(request):

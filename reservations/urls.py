@@ -38,6 +38,11 @@ urlpatterns = [
         name="reservation_confirmation",
     ),
     path(
+        "reservations/<str:booking_reference>/cancel/",
+        views.cancel_reservation,
+        name="cancel_reservation",
+    ),
+    path(
         "register/",
         views.register_view,
         name="register",
