@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 BOOKING_REFERENCE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
@@ -196,6 +197,10 @@ class Seat(models.Model):
 
 
 class Reservation(models.Model):
+    class Status(models.TextChoices):
+        CONFIRMED = "confirmed", "Confirmed"
+        CANCELLED = "cancelled", "Cancelled"
+
     booking_reference = models.CharField(
         max_length=8,
         unique=True,
@@ -236,6 +241,17 @@ class Reservation(models.Model):
         default="USD",
     )
 
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.CONFIRMED,
+    )
+
+    cancelled_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True,
     )
@@ -256,6 +272,17 @@ class Reservation(models.Model):
     @property
     def passenger_count(self):
         return self.passenger_bookings.count()
+
+    @property
+    def is_cancelled(self):
+        return self.status == self.Status.CANCELLED
+
+    @property
+    def can_cancel(self):
+        return (
+            self.status == self.Status.CONFIRMED
+            and self.travel_date >= timezone.localdate()
+        )
 
 
 class Booking(models.Model):
@@ -315,6 +342,9 @@ class Booking(models.Model):
     created_at = models.DateTimeField(
         auto_now_add=True,
     )
+    is_cancelled = models.BooleanField(
+        default=False,
+    )
 
     class Meta:
         ordering = [
@@ -329,6 +359,9 @@ class Booking(models.Model):
                     "travel_date",
                     "seat",
                 ],
+                condition=models.Q(
+                    is_cancelled=False,
+                ),
                 name="unique_seat_booking_per_flight_date",
             )
         ]
