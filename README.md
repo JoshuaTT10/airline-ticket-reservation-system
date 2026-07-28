@@ -1,139 +1,345 @@
-# AeroReserve — Airline Ticket Reservation System
+# AeroReserve
 
-AeroReserve is a full-stack airline ticket reservation web application developed with Django for the **University of Aizu Web Engineering course**.
+AeroReserve is a full-stack airline reservation platform built with Django for the University of Aizu Web Engineering course.
 
-The application allows users to search demo flight schedules between major international airports, compare fares, choose seats from an interactive seat map, reserve tickets for up to five passengers under one reservation, create accounts, and review previous bookings.
+Users can search generated flight schedules across 50 international airports, compare Economy and Business fares, reserve seats for up to five passengers, manage bookings, cancel reservations, recover forgotten passwords, and receive transactional booking notifications.
 
-> **Important:** Airport and airline names are based on real-world entities, but flight schedules, prices, routes, seat availability, and reservations are generated demonstration data. AeroReserve is not connected to any real airline reservation system.
+## Live Application
+
+**Production URL:**  
+https://aeroreserve-tk9e.onrender.com
+
+**Health check:**  
+https://aeroreserve-tk9e.onrender.com/health/
+
+> Airport and airline names are based on real-world entities. Routes, schedules, fares, seat availability, and reservations are generated demonstration data and are not connected to live airline systems.
 
 ---
 
-## Features
+## Project Status
+
+| Area | Status |
+|---|---|
+| Application functionality | Complete |
+| Responsive interface | Complete |
+| PostgreSQL deployment | Complete |
+| Automated tests | 163 passing |
+| Overall test coverage | 95% |
+| Application tables | 6 |
+| Total database tables | 16 |
+| Application primary keys | 6 |
+| Application foreign keys | 10 |
+| Continuous integration | Configured |
+| Production deployment | Live |
+
+---
+
+## Main Features
 
 ### Flight Search
 
-- Search flights between major international airports
-- 50 airport destinations in the demonstration database
-- Searchable airport selectors using airport code, city, or country
-- Dynamic destination filtering
-- Travel dates limited to the next 14 days
+Users can search available flights by selecting:
+
+- Departure airport
+- Destination airport
+- Travel date
+- Cabin class
+- Passenger count
+
+Search rules include:
+
+- Travel dates from today through the next 14 days
 - Economy and Business cabin classes
-- Passenger selection from 1 to 5 passengers
-- Multiple recurring daily flights on supported routes
-- Only flights with enough seats for the complete group are displayed
-- Per-passenger and total reservation prices
+- Reservations for 1–5 passengers
+- Different departure and destination airports
+- Only flights with enough available seats for the complete passenger group
+
+The airport controls support searching by:
+
+- Airport code
+- City name
+- Country
+
+Example searches:
+
+```text
+HND → LHR
+Tokyo → London
+Japan → United Kingdom
+```
+
+---
+
+### Dynamic HTMX Interface
+
+AeroReserve uses HTMX for asynchronous page updates without requiring a full page reload.
+
+#### Destination filtering
+
+When a departure airport is selected:
+
+```text
+Departure selected
+        ↓
+HTMX GET request
+        ↓
+Django filters valid destinations
+        ↓
+Partial template returned
+        ↓
+Destination field updated
+```
+
+#### Flight search
+
+When the search form is submitted:
+
+```text
+Search form submitted
+        ↓
+HTMX request
+        ↓
+Django validates and searches
+        ↓
+Flight result cards returned
+        ↓
+Results inserted into the current page
+```
+
+This keeps the server-side Django architecture while providing a responsive user experience.
+
+---
+
+### Flight Results
+
+Each result displays:
+
+- Airline
+- Flight number
+- Departure and arrival airports
+- Departure and arrival times
+- Cabin class
+- Available seats
+- Price per passenger
+- Total price for the selected group
+
+Only flights with enough seats for all requested passengers are shown.
+
+---
 
 ### Interactive Seat Selection
 
-- Visual aircraft-style seat map
-- Live available and occupied seat states
-- Economy and Business seat separation
-- Select exactly the number of seats required for the reservation
-- Individual seat assignment for every passenger
-- Server-side validation of all selected seats
-- Database protection against duplicate seat reservations
+Users choose seats from an aircraft-style seat map.
+
+The interface shows:
+
+- Available seats
+- Selected seats
+- Unavailable seats
+- Economy and Business seat areas
+- Passenger-to-seat assignments
+- Current selection progress
+- Updated reservation total
+
+The frontend prevents users from selecting the wrong number of seats, while Django repeats all validation on the server.
+
+---
 
 ### Multi-Passenger Reservations
 
-One reservation can contain up to five passenger tickets.
-
-For example:
+A single reservation can contain between one and five passengers.
 
 ```text
 Reservation ARABC123
 │
-├── Passenger 1 → Seat 4A
-├── Passenger 2 → Seat 4B
-└── Passenger 3 → Seat 5A
+├── Booking 1
+│   ├── Passenger: Alex Smith
+│   └── Seat: 4A
+│
+├── Booking 2
+│   ├── Passenger: Jamie Smith
+│   └── Seat: 4B
+│
+└── Booking 3
+    ├── Passenger: Taylor Smith
+    └── Seat: 5A
 ```
 
-Each reservation contains:
+A `Reservation` stores group-level information.
 
-- One booking reference
-- One flight
-- One travel date
-- One cabin class
-- Passenger count
-- Individual passenger names
-- Individual seats
-- Individual passenger fares
-- Combined total price
+Each `Booking` stores:
 
-### Authentication
+- One passenger
+- One seat
+- One fare
+- One flight date
 
-- Account registration
-- Django password hashing
-- Unique email validation
-- Sign in using either:
-    - Username
-    - Email address
-- Automatic login after registration
-- Secure POST logout
-- Registered-user booking history
-- Logged-in passenger name pre-fill
-
-### Guest Reservations
-
-Users are not required to create an account before booking.
-
-Guest reservations are protected using session-based reservation references so that another browser cannot simply access another guest's confirmation page.
-
-### Booking History
-
-Registered users can view their reservations under **My Bookings**.
-
-Each reservation displays:
-
-- Booking reference
-- Route
-- Airline
-- Flight number
-- Travel date
-- Cabin class
-- Passenger count
-- Total price
-
-Users can open each reservation to view the complete passenger and seat information.
-
-### HTMX
-
-AeroReserve uses HTMX to provide dynamic interactions without requiring full page reloads.
-
-HTMX is currently used for:
-
-1. **Flight search**
-    - Search results are inserted dynamically into the page.
-
-2. **Destination filtering**
-    - Selecting a departure airport dynamically updates the destination airport options.
-
-### Responsive UI
-
-The interface includes responsive layouts for:
-
-- Desktop
-- Tablet
-- Mobile
-
-The application includes:
-
-- Navigation bar
-- Hero search interface
-- Flight result cards
-- Airport autocomplete controls
-- Interactive seat map
-- Passenger forms
-- Booking confirmation ticket
-- Booking history
-- Login and registration pages
-- User feedback messages
-- Empty states
+This separates group-level reservation data from passenger-level ticket data.
 
 ---
 
-# Technology Stack
+### Guest Reservations
 
-## Backend
+Users can complete a reservation without creating an account.
+
+Guest users provide:
+
+- Passenger names
+- A contact email address
+- Seat selections
+
+Guest confirmation access is protected using the Django session. A guest reservation can only be opened or cancelled from the browser session that created it.
+
+---
+
+### User Accounts
+
+Registered users can:
+
+- Create an account
+- Sign in with a username
+- Sign in with an email address
+- Reset a forgotten password
+- View booking history
+- Open reservation details
+- Cancel eligible reservations
+- Have their account name pre-filled during checkout
+
+Django’s authentication system provides:
+
+- Secure password hashing
+- Session authentication
+- CSRF protection
+- Token-based password recovery
+- User authorization
+
+---
+
+### Password Recovery
+
+The application includes Django’s secure password-reset workflow.
+
+```text
+Forgot password
+        ↓
+Submit registered email
+        ↓
+One-time reset token generated
+        ↓
+Reset link created
+        ↓
+User chooses a new password
+        ↓
+Old password becomes invalid
+```
+
+Security behavior includes:
+
+- One-time reset links
+- Invalid-token rejection
+- Used-token rejection
+- No account-enumeration response differences
+- Inactive users do not receive reset links
+
+---
+
+### Booking Confirmation
+
+After a successful reservation, users receive a confirmation page containing:
+
+- Booking reference
+- Reservation status
+- Airline
+- Flight number
+- Route
+- Date
+- Departure and arrival times
+- Cabin class
+- Passenger names
+- Assigned seats
+- Individual fares
+- Total price
+
+Booking references use the format:
+
+```text
+ARXXXXXX
+```
+
+---
+
+### Reservation Cancellation
+
+Eligible future reservations can be cancelled.
+
+Cancellation rules include:
+
+- Cancellation requires a POST request
+- Registered reservations can only be cancelled by their owner
+- Guest reservations can only be cancelled from the original session
+- Cancelled reservations remain visible in booking history
+- Cancelled bookings are marked inactive
+- Cancelled seats become available for another reservation
+- Already-cancelled reservations cannot be cancelled again
+- Past reservations cannot be cancelled
+
+The reservation is preserved rather than deleted, allowing the application to retain booking history.
+
+---
+
+### Booking History
+
+Registered users can view all their reservations under **My Bookings**.
+
+Each history card displays:
+
+- Travel date
+- Route
+- Airline
+- Flight number
+- Booking reference
+- Passenger count
+- Cabin class
+- Total price
+- Confirmed or Cancelled status
+
+Users can open each reservation for complete passenger and seat details.
+
+---
+
+### Transactional Email Workflows
+
+The project includes email workflows for:
+
+- Password reset
+- Reservation confirmation
+- Reservation cancellation
+
+Email notifications include:
+
+- Booking reference
+- Route
+- Flight details
+- Passenger names
+- Seat assignments
+- Fare information
+- Cancellation information
+
+Email callbacks are registered using `transaction.on_commit()`, ensuring that an email is only triggered after the database transaction succeeds.
+
+Local development defaults to Django’s console email backend.
+
+```text
+EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+```
+
+The production email backend is environment-configurable. The current demonstration deployment uses the console backend so email output is written to service logs without risking interruption to reservation transactions.
+
+---
+
+## Technology Stack
+
+### Backend
 
 - Python 3.12
 - Django 6
@@ -142,24 +348,26 @@ The application includes:
 - Django Authentication
 - Django Sessions
 
-## Frontend
+### Frontend
 
 - HTML5
 - CSS3
 - Vanilla JavaScript
 - HTMX
 
-## Database
+### Databases
 
-### Development
+- SQLite for local development
+- PostgreSQL for production
 
-- SQLite
+### Deployment
 
-### Production
-
+- Render
+- Gunicorn
+- WhiteNoise
 - PostgreSQL
 
-## Development Tools
+### Development and Quality Tools
 
 - uv
 - Git
@@ -169,128 +377,176 @@ The application includes:
 - pytest-django
 - Coverage
 - pre-commit
+- GitHub Actions
 - OpenCode
 - OpenSpec
 
-## Production
-
-- Gunicorn
-- WhiteNoise
-- PostgreSQL
-- Render
-
-## Continuous Integration
-
-- GitHub Actions
-
 ---
 
-# Architecture
+## Architecture
 
-AeroReserve follows Django's standard server-side architecture.
+AeroReserve follows Django’s server-rendered architecture.
 
 ```text
-┌───────────────────────────────┐
-│            Browser            │
-│                               │
-│ HTML / CSS / JS / HTMX        │
-└──────────────┬────────────────┘
-               │
-               │ HTTP GET / POST
-               ▼
-┌───────────────────────────────┐
-│          Django URLs          │
-└──────────────┬────────────────┘
-               │
-               ▼
-┌───────────────────────────────┐
-│          Django Views         │
-│                               │
-│ - Search logic                │
-│ - Booking logic               │
-│ - Authentication              │
-│ - Session handling            │
-└──────────────┬────────────────┘
-               │
-               ▼
-┌───────────────────────────────┐
-│         Django Forms          │
-│                               │
-│ - Input validation            │
-│ - Passenger validation        │
-│ - Seat validation             │
-│ - Login / Registration        │
-└──────────────┬────────────────┘
-               │
-               ▼
-┌───────────────────────────────┐
-│          Django ORM           │
-└──────────────┬────────────────┘
-               │
-               ▼
-┌───────────────────────────────┐
-│           Database            │
-│                               │
-│ SQLite      → Development     │
-│ PostgreSQL  → Production      │
-└───────────────────────────────┘
+┌──────────────────────────────────┐
+│             Browser              │
+│                                  │
+│ HTML · CSS · JavaScript · HTMX   │
+└────────────────┬─────────────────┘
+                 │
+                 │ HTTP GET / POST
+                 ▼
+┌──────────────────────────────────┐
+│            URL Router            │
+│                                  │
+│ reservations/urls.py             │
+└────────────────┬─────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────┐
+│              Views               │
+│                                  │
+│ Search logic                     │
+│ Booking workflow                 │
+│ Cancellation workflow            │
+│ Authentication                   │
+│ Session authorization            │
+└────────────────┬─────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────┐
+│              Forms               │
+│                                  │
+│ Input validation                 │
+│ Passenger validation             │
+│ Seat validation                  │
+│ Authentication forms             │
+│ Password-reset forms             │
+└────────────────┬─────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────┐
+│            Django ORM            │
+└────────────────┬─────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────┐
+│             Database             │
+│                                  │
+│ SQLite      Development          │
+│ PostgreSQL  Production           │
+└──────────────────────────────────┘
 ```
 
 ---
 
-# Data Model
+## Database Overview
 
-The main application entities are:
+The database contains 16 tables in total.
+
+### AeroReserve application tables
 
 ```text
-User
- │
- └── Reservation
-       │
-       ├── booking_reference
-       ├── flight
-       ├── travel_date
-       ├── cabin_class
-       ├── total_price
-       ├── currency
-       │
-       ├── Booking
-       │     ├── passenger_name
-       │     ├── seat
-       │     └── price
-       │
-       ├── Booking
-       │     ├── passenger_name
-       │     ├── seat
-       │     └── price
-       │
-       └── ...
+6 application tables
+```
 
+| Model | Purpose |
+|---|---|
+| `City` | Stores airport and location information |
+| `Airline` | Stores airline information |
+| `Flight` | Stores recurring flight schedules, routes, and prices |
+| `Seat` | Stores aircraft seats for each flight |
+| `Reservation` | Stores group-level reservation information |
+| `Booking` | Stores one passenger and seat assignment |
+
+### Django framework tables
+
+```text
+10 Django-managed tables
+```
+
+These support:
+
+- Authentication
+- Users
+- Groups
+- Permissions
+- Sessions
+- Admin history
+- Content types
+- Migrations
+
+---
+
+## Primary Keys
+
+Each application model has an automatically generated Django `id` primary key.
+
+```text
+City.id
+Airline.id
+Flight.id
+Seat.id
+Reservation.id
+Booking.id
+```
+
+Total application primary keys:
+
+```text
+6
+```
+
+`Reservation.booking_reference` is unique but is not the primary key.
+
+---
+
+## Foreign Keys
+
+The six application tables contain ten foreign-key relationships.
+
+| Model | Foreign keys | Count |
+|---|---|---:|
+| `City` | None | 0 |
+| `Airline` | None | 0 |
+| `Flight` | `airline`, `departure_city`, `arrival_city` | 3 |
+| `Seat` | `flight` | 1 |
+| `Reservation` | `user`, `flight` | 2 |
+| `Booking` | `reservation`, `user`, `flight`, `seat` | 4 |
+| **Total** |  | **10** |
+
+---
+
+## Entity Relationships
+
+```text
 Airline
    │
    └── Flight
-        │
-        ├── Departure City
-        ├── Arrival City
-        ├── Prices
-        └── Seats
+          ├── departure_city → City
+          ├── arrival_city   → City
+          └── Seat
 
-City
- ├── Departing Flights
- └── Arriving Flights
+User
+   │
+   └── Reservation
+          ├── Flight
+          └── Booking
+                 ├── User
+                 ├── Flight
+                 └── Seat
 ```
 
 ---
 
-# Models
+## Model Details
 
-## City
+### City
 
-Represents an airport/city.
-
-Important fields:
+Stores airport and geographic information.
 
 ```text
+id
 name
 airport_code
 country
@@ -298,45 +554,44 @@ latitude
 longitude
 ```
 
-Example:
+Examples:
 
 ```text
-Tokyo Haneda (HND)
-London Heathrow (LHR)
-Singapore Changi (SIN)
+HND — Tokyo Haneda
+LHR — London Heathrow
+SIN — Singapore Changi
+DEL — Delhi Indira Gandhi
 ```
 
 ---
 
-## Airline
+### Airline
 
-Represents an airline.
-
-Fields:
+Stores airline information.
 
 ```text
+id
 name
 airline_code
 ```
 
-Example:
+Examples:
 
 ```text
-All Nippon Airways (NH)
-Japan Airlines (JL)
-British Airways (BA)
-Singapore Airlines (SQ)
+NH — All Nippon Airways
+JL — Japan Airlines
+BA — British Airways
+SQ — Singapore Airlines
 ```
 
 ---
 
-## Flight
+### Flight
 
-Represents a recurring flight schedule.
-
-Fields include:
+Stores recurring flight schedule information.
 
 ```text
+id
 airline
 departure_city
 arrival_city
@@ -348,85 +603,69 @@ business_price
 currency
 ```
 
-The application validates that departure and arrival airports cannot be the same.
+Validation prevents the departure and arrival airport from being the same.
 
 ---
 
-## Seat
+### Seat
 
-Represents a physical seat belonging to a flight.
-
-Fields:
+Stores a physical seat belonging to a flight.
 
 ```text
+id
 flight
 row_number
 seat_letter
 cabin_class
 ```
 
-The demonstration aircraft contains:
+Demo aircraft layout:
 
 ```text
-Rows 1–3 → Business
-Rows 4–5 → Economy
-```
+Rows 1–3  Business
+Rows 4–5  Economy
 
-Each row contains:
-
-```text
 A B   C D
 ```
 
-Therefore each flight contains:
-
-```text
-5 rows × 4 seats = 20 seats
-```
-
-A database constraint prevents duplicate seat definitions for the same flight.
+Each generated flight contains 20 seats.
 
 ---
 
-## Reservation
+### Reservation
 
-Represents the overall group reservation.
-
-Fields:
+Stores group-level reservation information.
 
 ```text
+id
 booking_reference
 user
+contact_email
 flight
 travel_date
 cabin_class
 total_price
 currency
+status
+cancelled_at
 created_at
 ```
 
-A reservation can contain between one and five passenger bookings.
-
-Example:
+Possible status values:
 
 ```text
-Booking reference: ARX7K2M4
-Flight: NH123
-Date: July 29, 2026
-Cabin: Economy
-Passengers: 3
-Total: $1,500
+confirmed
+cancelled
 ```
 
 ---
 
-## Booking
+### Booking
 
-Represents one passenger ticket within a reservation.
-
-Fields:
+Stores one passenger ticket inside a reservation.
 
 ```text
+id
 reservation
 user
 flight
@@ -435,276 +674,217 @@ travel_date
 passenger_name
 price
 currency
+is_cancelled
 created_at
 ```
 
-A database-level unique constraint prevents this combination from appearing twice:
+---
+
+## Database Constraints
+
+### Unique booking reference
+
+Every reservation has a unique public booking reference.
+
+```text
+ARABC123
+```
+
+### Unique seat definition
+
+A seat cannot be defined twice for the same flight, row, and seat letter.
+
+### Active seat booking constraint
+
+The combination below must be unique for active bookings:
 
 ```text
 flight + travel_date + seat
 ```
 
-This means the same seat cannot be booked twice for the same recurring flight on the same date.
+This prevents two active reservations from booking the same seat on the same flight date.
 
----
-
-# Booking Workflow
-
-The main user flow is:
+The uniqueness rule is conditional:
 
 ```text
-Home
-  │
-  ▼
-Select departure airport
-  │
-  ▼
-Destination options update
-  │
-  ▼
-Choose:
-- Destination
-- Travel date
-- Cabin class
-- Passenger count
-  │
-  ▼
-Search flights
-  │
-  ▼
-Available flights displayed
-  │
-  ▼
-Choose flight
-  │
-  ▼
-Interactive seat map
-  │
-  ▼
-Select seats
-  │
-  ▼
-Enter passenger names
-  │
-  ▼
-Confirm reservation
-  │
-  ▼
-Reservation + passenger bookings
-created atomically
-  │
-  ▼
-Booking confirmation
+is_cancelled = False
 ```
 
----
-
-# Validation and Booking Integrity
-
-Important booking rules are enforced on the server rather than relying on JavaScript.
-
-## Search Validation
-
-The server checks:
-
-- Departure airport is valid
-- Destination airport is valid
-- Departure and destination differ
-- Travel date is not in the past
-- Travel date is no more than 14 days ahead
-- Cabin class is valid
-- Passenger count is between 1 and 5
+Therefore, after a booking is cancelled, the same seat can be reserved again while the original cancelled record remains stored.
 
 ---
 
-## Flight Availability
+## Booking Transaction
 
-A flight is only displayed when:
-
-```text
-available seats >= passenger count
-```
-
-For example, if a user searches for four passengers but only three Economy seats remain, that flight does not appear in the results.
-
----
-
-## Seat Validation
-
-When a booking is submitted, Django verifies:
-
-- Correct number of seats selected
-- No duplicate seats in the request
-- Seats belong to the chosen flight
-- Seats match the chosen cabin class
-- Seats are still available
-- Seats have not been booked by another reservation
-
----
-
-## Transaction Safety
-
-Reservations and passenger bookings are created inside a database transaction.
+Reservations are created atomically.
 
 ```text
 BEGIN TRANSACTION
 
 Create Reservation
 
-Create Passenger Booking 1
-Create Passenger Booking 2
-Create Passenger Booking 3
+Create Booking for Passenger 1
+Create Booking for Passenger 2
+Create Booking for Passenger 3
+
+Register confirmation email callback
 
 COMMIT
 ```
 
-If any passenger seat fails validation:
+If any passenger booking fails:
 
 ```text
 ROLLBACK
 ```
 
-This prevents partially completed group reservations.
+This prevents incomplete group reservations.
 
----
-
-# Authentication and Authorization
-
-AeroReserve uses Django's built-in authentication system.
-
-## Registration
-
-The registration form collects:
+Example:
 
 ```text
-Username
-Full name
-Email
-Password
-Password confirmation
+Passenger 1 booking succeeds
+Passenger 2 booking succeeds
+Passenger 3 seat is unavailable
 ```
 
-Passwords are stored using Django's password hashing system.
+Without a transaction, the first two bookings could remain.
 
-Email addresses must be unique.
+With `transaction.atomic()`, the entire operation is rolled back.
 
 ---
 
-## Login
+## Server-Side Validation
 
-Users may sign in using either:
+The application never relies only on browser-side validation.
 
-```text
-Username
-```
+### Search validation
 
-or:
+Django verifies:
 
-```text
-Email address
-```
+- Valid departure airport
+- Valid destination airport
+- Different departure and destination
+- Date is not in the past
+- Date is no more than 14 days ahead
+- Valid cabin class
+- Passenger count between 1 and 5
 
-The login form resolves the email address to the associated Django username before authentication.
+### Booking validation
+
+Django verifies:
+
+- Contact email is valid
+- Exact number of seats selected
+- No duplicate seats selected
+- Seats belong to the selected flight
+- Seats match the selected cabin
+- Seats remain available
+- Passenger names are provided
+
+### Cancellation validation
+
+Django verifies:
+
+- Request method is POST
+- Reservation exists
+- User or guest session is authorized
+- Reservation is confirmed
+- Reservation date is not in the past
+
+Client-side JavaScript improves usability, but the server protects the database.
 
 ---
 
-## Reservation Security
+## Session Usage
 
-### Registered reservations
+AeroReserve separates temporary browser-specific data from persistent data.
 
-A logged-in user can only view reservations belonging to their own account.
+### Stored in the database
 
-### Guest reservations
+- Users
+- Airports
+- Airlines
+- Flights
+- Seats
+- Reservations
+- Passenger bookings
+- Cancellation status
 
-Guest reservation confirmation access is stored in the browser session.
+### Stored in the session
 
-This prevents another browser from accessing a guest reservation simply by knowing its booking reference.
+- Previous flight-search values
+- Guest-accessible reservation references
+- Authentication session information
 
 ---
 
-# URL Structure
+## URL Structure
 
 | Method | URL | Description |
 |---|---|---|
-| GET | `/` | Home and flight search |
+| GET | `/` | Homepage and flight search |
 | GET | `/airports/destinations/` | HTMX destination filtering |
-| GET | `/flights/search/` | Search available flights |
-| GET | `/flights/<flight_id>/seats/` | Seat selection |
+| GET | `/flights/search/` | Flight search results |
+| GET | `/flights/<flight_id>/seats/` | Seat-selection page |
 | POST | `/flights/<flight_id>/seats/` | Create reservation |
+| GET | `/reservations/<reference>/` | Reservation confirmation |
+| POST | `/reservations/<reference>/cancel/` | Cancel reservation |
 | GET | `/bookings/` | Logged-in booking history |
-| GET | `/reservations/<booking_reference>/` | Booking confirmation |
-| GET / POST | `/register/` | Create an account |
-| GET / POST | `/login/` | Sign in |
-| POST | `/logout/` | Sign out |
+| GET / POST | `/register/` | Account registration |
+| GET / POST | `/login/` | Account login |
+| POST | `/logout/` | Account logout |
+| GET / POST | `/password-reset/` | Request password reset |
+| GET | `/password-reset/done/` | Reset-email requested page |
+| GET / POST | `/reset/<uid>/<token>/` | Set a new password |
+| GET | `/reset/done/` | Password-reset completion |
 | GET | `/health/` | Deployment health check |
 | GET | `/admin/` | Django administration |
 
 ---
 
-# Session Usage
+## Demonstration Dataset
 
-The application intentionally separates temporary session data from persistent database data.
-
-## Stored in the Database
-
-```text
-Users
-Cities
-Airlines
-Flights
-Seats
-Reservations
-Passenger bookings
-```
-
-## Stored in the Session
-
-```text
-Most recent flight search
-Guest-accessible reservation references
-Authentication session information
-```
-
----
-
-# Demonstration Dataset
-
-The project includes a Django management command:
+The application includes a Django management command:
 
 ```bash
 uv run python manage.py seed_airline_data
 ```
 
-The seed dataset includes:
+The generated dataset includes:
 
-```text
-50 airports
-34 airlines
-Hundreds of recurring flight schedules
-20 seats per flight
-Economy and Business cabins
-Generated fares
+- 50 airports
+- 34 airlines
+- Generated international routes
+- Multiple recurring flight schedules
+- Economy and Business prices
+- 20 seats per flight
+
+The route generator uses:
+
+- Nearby airport connections
+- Major international hubs
+- Popular global routes
+- Bidirectional route generation
+- Deterministic generated prices
+
+To rebuild all airline demo data:
+
+```bash
+uv run python manage.py seed_airline_data --reset
 ```
 
-The route generator creates connections using:
-
-- Nearby airports
-- International hubs
-- Popular routes
-- Bidirectional route creation
-
-Configured routes receive multiple recurring daily services.
+> The `--reset` option removes existing demo reservations, bookings, flights, seats, airlines, and airports. User accounts are preserved.
 
 ---
 
-# Example Airports
-
-Some included airports are:
+## Example Airports
 
 ```text
 HND — Tokyo Haneda
 KIX — Osaka Kansai
 CTS — Sapporo New Chitose
+FUK — Fukuoka
 ICN — Seoul Incheon
 PEK — Beijing Capital
 PVG — Shanghai Pudong
@@ -719,8 +899,6 @@ LHR — London Heathrow
 CDG — Paris Charles de Gaulle
 FRA — Frankfurt
 AMS — Amsterdam Schiphol
-MAD — Madrid Barajas
-FCO — Rome Fiumicino
 JFK — New York JFK
 LAX — Los Angeles
 SFO — San Francisco
@@ -729,13 +907,11 @@ MEL — Melbourne
 AKL — Auckland
 ```
 
-The full dataset contains 50 airports.
+The full generated dataset contains 50 airports.
 
 ---
 
-# Example Airlines
-
-The demonstration dataset includes airlines such as:
+## Example Airlines
 
 ```text
 All Nippon Airways
@@ -763,23 +939,16 @@ Air New Zealand
 
 ---
 
-# Local Development Setup
+## Local Development Setup
 
-## 1. Clone the Repository
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/JoshuaTT10/airline-ticket-reservation-system.git
-```
-
-Enter the project:
-
-```bash
 cd airline-ticket-reservation-system
 ```
 
----
-
-## 2. Install Dependencies
+### 2. Install dependencies
 
 The project uses `uv`.
 
@@ -787,43 +956,25 @@ The project uses `uv`.
 uv sync
 ```
 
----
-
-## 3. Apply Database Migrations
+### 3. Apply migrations
 
 ```bash
 uv run python manage.py migrate
 ```
 
----
-
-## 4. Load Demonstration Data
-
-For a new database:
+### 4. Load demonstration data
 
 ```bash
 uv run python manage.py seed_airline_data
 ```
 
-To completely rebuild demonstration airline data:
-
-```bash
-uv run python manage.py seed_airline_data --reset
-```
-
-> `--reset` deletes existing reservations, bookings, flights, seats, airlines, and airport demo data before regenerating them. User accounts are preserved.
-
----
-
-## 5. Create an Administrator
+### 5. Create an administrator
 
 ```bash
 uv run python manage.py createsuperuser
 ```
 
----
-
-## 6. Start the Development Server
+### 6. Start the server
 
 ```bash
 uv run python manage.py runserver
@@ -843,132 +994,215 @@ http://127.0.0.1:8000/admin/
 
 ---
 
-# Code Quality
+## Environment Variables
 
-AeroReserve uses Ruff for linting and formatting.
+The application reads sensitive and environment-specific configuration from environment variables.
 
-## Format
+Common production variables:
 
-```bash
-uv run ruff format .
+```text
+SECRET_KEY
+DJANGO_DEBUG
+DATABASE_URL
+RENDER_EXTERNAL_HOSTNAME
+EMAIL_BACKEND
+DEFAULT_FROM_EMAIL
 ```
 
-## Lint
+Optional email-provider credentials depend on the selected backend.
 
-```bash
-uv run ruff check .
-```
-
-## Django System Check
-
-```bash
-uv run python manage.py check
-```
+Do not commit secrets or API keys to GitHub.
 
 ---
 
-# Automated Tests
+## Automated Tests
 
-The application includes automated tests covering:
+AeroReserve includes 163 automated tests.
 
-- Models
-- Model validation
-- Database seat uniqueness
-- Search validation
-- Flight availability
-- HTMX requests
-- Destination filtering
-- Seat selection
-- Multi-passenger reservations
-- Guest reservations
-- Reservation authorization
-- Booking history
+The suite covers:
+
+### Models and constraints
+
+- Model string representations
+- Cabin pricing
+- Seat formatting
+- Primary relationships
+- Unique active-seat bookings
+- Cancelled seat reuse
+- Reservation cancellation eligibility
+
+### Search forms
+
+- Valid passenger counts
+- Invalid passenger counts
+- Date boundaries
+- Cabin validation
+- Same-airport rejection
+- Airport labels
+
+### Booking forms
+
+- Passenger-field creation
+- Contact-email normalization
+- Exact seat count
+- Duplicate-seat rejection
+- Invalid seat IDs
+- Cabin mismatch
+- Occupied seats
+
+### Authentication
+
 - Registration
-- Password handling
+- Unique emails
+- Full-name handling
 - Username login
 - Email login
-- Incorrect password handling
+- Case-insensitive email login
+- Incorrect passwords
+- Inactive accounts
+
+### Password recovery
+
+- Reset request page
+- Registered and unknown email behavior
+- Email generation
+- Reset tokens
+- Invalid tokens
+- Used-token rejection
+- Password updates
+- Mismatched passwords
+
+### Reservation workflow
+
+- Guest reservations
+- Registered reservations
+- Multi-passenger bookings
+- Confirmation access
+- Session protection
+- Booking-history access
+
+### Cancellation
+
+- Owner cancellation
+- Guest cancellation
+- Unauthorized cancellation
+- POST-only enforcement
+- Cancellation timestamps
+- Cancelled booking state
+- Seat release
+- Booking-history status
+
+### Email workflows
+
+- Confirmation-email generation
+- Cancellation-email generation
+- Recipient selection
+- Subject lines
+- Passenger and seat information
+- Transaction callbacks
+- Invalid-booking email prevention
+
+### HTMX and deployment
+
+- HTMX partial responses
+- Destination filtering
+- Flight search
 - Health endpoint
 
-Run the tests:
+Run the full suite:
 
 ```bash
 uv run pytest
 ```
 
-Current test result:
+Current result:
 
 ```text
-28 passed
+163 passed
 ```
 
 ---
 
-# Test Coverage
+## Test Coverage
 
 Run:
 
 ```bash
 uv run coverage run -m pytest
-```
-
-Then:
-
-```bash
 uv run coverage report
 ```
 
-Current overall application coverage:
+Current application coverage:
 
 ```text
-89%
+95%
 ```
 
-Example coverage result:
+Current coverage summary:
 
 ```text
 Name                     Cover
 --------------------------------
 reservations/admin.py      97%
-reservations/forms.py      93%
-reservations/models.py     84%
-reservations/views.py      82%
+reservations/forms.py      94%
+reservations/models.py     88%
+reservations/views.py      84%
 --------------------------------
-TOTAL                      89%
+TOTAL                      95%
 ```
 
 ---
 
-# Pre-Commit Checks
+## Code Quality
 
-The project includes pre-commit hooks for:
+### Ruff formatting
 
-- Ruff linting
-- Ruff formatting
-- Django system checks
+```bash
+uv run ruff format .
+```
 
-Install them with:
+### Ruff linting
+
+```bash
+uv run ruff check .
+```
+
+### Django system check
+
+```bash
+uv run python manage.py check
+```
+
+### Pre-commit hooks
+
+Install:
 
 ```bash
 uv run pre-commit install
 ```
 
-Run manually:
+Run all hooks:
 
 ```bash
 uv run pre-commit run --all-files
 ```
 
+Configured hooks verify:
+
+- Ruff linting
+- Ruff formatting
+- Django system checks
+
 ---
 
-# Continuous Integration
+## Continuous Integration
 
-GitHub Actions automatically checks the project when code is pushed.
+GitHub Actions runs quality checks on pushes and pull requests.
 
-The CI workflow performs:
+The workflow performs:
 
 ```text
-Install dependencies
+Install Python and dependencies
         ↓
 Ruff lint
         ↓
@@ -978,10 +1212,10 @@ Django system check
         ↓
 pytest
         ↓
-Coverage
+Coverage report
 ```
 
-Workflow configuration:
+Workflow file:
 
 ```text
 .github/workflows/ci.yml
@@ -989,137 +1223,107 @@ Workflow configuration:
 
 ---
 
-# Static Files
+## AI-Assisted Development Setup
 
-Django serves development static files normally.
+The project uses an AI-assisted engineering workflow with explicit project configuration.
 
-Production static files are collected using:
-
-```bash
-uv run python manage.py collectstatic --noinput
-```
-
-WhiteNoise is configured for production static-file delivery.
-
-Generated production static files are stored under:
+Files include:
 
 ```text
-staticfiles/
+AGENTS.md
+openspec/
+.opencode/
 ```
 
-and are not committed to Git.
+The workflow defines:
+
+- Architecture rules
+- Model responsibilities
+- Booking constraints
+- Authentication requirements
+- Testing expectations
+- Quality commands
+- Documentation standards
+
+AI-generated or AI-assisted changes are validated using:
+
+- Automated tests
+- Ruff
+- Django checks
+- Pre-commit hooks
+- GitHub Actions
+- Manual browser testing
 
 ---
 
-# Production Architecture
+## Production Deployment
 
-The production architecture is:
+AeroReserve is deployed on Render.
 
-```text
-                    Internet
-                       │
-                       ▼
-                Render Web Service
-                       │
-                       ▼
-                    Gunicorn
-                       │
-                       ▼
-                     Django
-                    /      \
-                   /        \
-                  ▼          ▼
-           WhiteNoise    PostgreSQL
-           Static Files    Database
-```
-
----
-
-# Production Environment Variables
-
-Production uses environment variables rather than committed secrets.
-
-Important variables include:
+Production architecture:
 
 ```text
-SECRET_KEY
-DATABASE_URL
-DJANGO_DEBUG
-RENDER_EXTERNAL_HOSTNAME
+Internet
+   │
+   ▼
+Render Web Service
+   │
+   ▼
+Gunicorn
+   │
+   ▼
+Django
+   ├── WhiteNoise static files
+   └── PostgreSQL database
 ```
 
-Production uses:
-
-```text
-DJANGO_DEBUG=False
-```
-
-The local development database remains SQLite when `DATABASE_URL` is not configured.
-
----
-
-# Render Deployment
-
-The repository contains a Render Blueprint:
+The repository contains:
 
 ```text
 render.yaml
 ```
 
-It defines:
+The Render deployment performs:
 
-```text
-AeroReserve Django Web Service
-+
-PostgreSQL Database
-```
-
-## Deployment Process
-
-1. Push the project to GitHub.
-2. Sign in to Render.
-3. Create a new **Blueprint**.
-4. Connect the GitHub repository.
-5. Render reads `render.yaml`.
-6. PostgreSQL is provisioned.
-7. Dependencies are installed.
-8. Static files are collected.
-9. Django migrations are applied.
-10. The Django application starts using Gunicorn.
-11. The deployment health endpoint verifies the application.
+1. Install `uv`
+2. Install production dependencies
+3. Collect static files
+4. Apply Django migrations
+5. Seed demonstration airline data when needed
+6. Start Gunicorn
+7. Verify `/health/`
 
 ---
 
-# Health Check
+## Static Files
 
-AeroReserve provides:
+Production static files are collected with:
+
+```bash
+uv run python manage.py collectstatic --noinput
+```
+
+WhiteNoise serves the collected static files.
+
+Generated files are stored in:
 
 ```text
-/health/
+staticfiles/
 ```
 
-Successful response:
-
-```json
-{
-    "status": "ok"
-}
-```
-
-This endpoint can be used by the production hosting platform to verify that Django is running.
+This directory is excluded from Git.
 
 ---
 
-# Project Structure
+## Project Structure
 
 ```text
 airline-ticket-reservation-system/
 │
 ├── airline_reservation/
-│   ├── __init__.py
-│   ├── asgi.py
 │   ├── settings.py
 │   ├── urls.py
+│   ├── asgi.py
 │   └── wsgi.py
 │
 ├── reservations/
@@ -1138,6 +1342,10 @@ airline-ticket-reservation-system/
 │   │
 │   ├── templates/
 │   │   └── reservations/
+│   │       ├── emails/
+│   │       │   ├── reservation_confirmation_email.txt
+│   │       │   └── reservation_cancellation_email.txt
+│   │       │
 │   │       ├── partials/
 │   │       │   ├── destination_select.html
 │   │       │   └── flight_results.html
@@ -1149,13 +1357,20 @@ airline-ticket-reservation-system/
 │   │       ├── login.html
 │   │       ├── register.html
 │   │       ├── search_results.html
-│   │       └── seat_selection.html
+│   │       ├── seat_selection.html
+│   │       ├── password_reset_form.html
+│   │       ├── password_reset_done.html
+│   │       ├── password_reset_confirm.html
+│   │       ├── password_reset_complete.html
+│   │       ├── password_reset_email.txt
+│   │       └── password_reset_subject.txt
 │   │
 │   ├── admin.py
-│   ├── apps.py
+│   ├── emails.py
 │   ├── forms.py
 │   ├── models.py
 │   ├── tests.py
+│   ├── test_validation_matrix.py
 │   ├── urls.py
 │   └── views.py
 │
@@ -1163,6 +1378,7 @@ airline-ticket-reservation-system/
 │   └── workflows/
 │       └── ci.yml
 │
+├── openspec/
 ├── .gitignore
 ├── .pre-commit-config.yaml
 ├── AGENTS.md
@@ -1175,224 +1391,90 @@ airline-ticket-reservation-system/
 
 ---
 
-# Course Exercise Coverage
+## Web Engineering Course Coverage
 
-## Exercise 1 — Project Proposal
+### Project and architecture
 
-Defined:
+- Defined project purpose
+- Defined user workflows
+- Designed application architecture
+- Designed relational database schema
 
-- Project title
-- Project purpose
-- Main user actions
-- Initial data model
-- User interface concept
+### Development environment
 
----
-
-## Exercise 2 — Application Architecture
-
-Defined:
-
-- Main entities
-- Main user workflow
-- Browser → Django → Database architecture
-
----
-
-## Exercise 3 — Development Environment
-
-Configured:
-
-- Git
-- GitHub
-- uv
-- Python virtual environment
-- Ruff
-- pytest
-- Coverage
+- Git and GitHub
+- uv environment management
+- Ruff formatting and linting
+- pytest and Coverage
 - pre-commit
-- `.gitignore`
-- Project documentation
+- GitHub Actions
 
----
+### Django and database
 
-## Exercise 4 — AI Development Tools
-
-Used:
-
-- OpenCode
-- OpenSpec
-- `AGENTS.md`
-
-Agent instructions define:
-
-- Project architecture
-- Booking rules
-- Authentication rules
-- Validation requirements
-- Testing requirements
-- Quality commands
-
----
-
-## Exercise 5 — Django and Database
-
-Implemented:
-
-- Django project
-- Django application
-- Database models
-- Relationships
-- Model validation
-- Model string representations
+- Six application models
+- Foreign-key relationships
+- Database constraints
 - Migrations
 - Seed management command
 - Django Admin
 
----
+### Business logic and views
 
-## Exercise 6 — Views and URLs
-
-Implemented views for:
-
-- Home
 - Flight search
-- Dynamic destinations
-- Seat selection
-- Reservation creation
-- Confirmation
+- Availability calculation
+- Multi-passenger booking
+- Transaction-safe reservation creation
+- Cancellation
+- Authentication
+- Password recovery
 - Booking history
+- Email notifications
+
+### Templates
+
+- Reusable base layout
+- Template inheritance
+- Partial templates
+- Separate HTML, CSS, JavaScript, and Python responsibilities
+
+### User input
+
+- GET search forms
+- POST booking forms
 - Registration
 - Login
-- Logout
-- Health check
+- Password reset
+- Passenger data
+- Email collection
+- Seat selection
+- Cancellation confirmation
 
----
+### Rich interface
 
-## Exercise 7 — Sessions and Templates
-
-Implemented:
-
-- Django sessions
-- Guest reservation authorization
-- Previous search memory
-- Reusable base template
-- Template inheritance
-- Reusable HTMX partial templates
-
----
-
-## Exercise 8 — Forms and User Input
-
-Implemented:
-
-- GET flight search
-- POST reservation creation
-- Registration forms
-- Login forms
-- Passenger forms
-- Seat validation
-- Search validation
-- Django CSRF protection
-
----
-
-## Exercise 9 — HTML, CSS and Responsive Design
-
-Implemented:
-
-- Semantic HTML
-- Form labels
-- Responsive navigation
-- Responsive search interface
-- Responsive flight cards
+- Responsive layout
+- Searchable airport fields
+- HTMX destination filtering
+- HTMX flight results
 - Interactive seat map
-- Booking confirmation UI
-- Booking history
-- Authentication pages
-- Mobile layouts
-- Accessible seat button states
+- Mobile-compatible interface
 
----
+### Tests, specifications, and documentation
 
-## Exercise 10 — HTMX
+- 163 automated tests
+- 95% coverage
+- README documentation
+- OpenSpec files
+- AGENTS.md
+- Continuous integration
 
-Implemented two dynamic interactions:
+### Deployment
 
-### Dynamic Flight Search
-
-```text
-Search form
-    ↓
-HTMX request
-    ↓
-Django
-    ↓
-flight_results.html
-    ↓
-Results inserted into current page
-```
-
-### Dynamic Destination Filtering
-
-```text
-Departure selected
-    ↓
-HTMX request
-    ↓
-Django route lookup
-    ↓
-destination_select.html
-    ↓
-Destination selector replaced
-```
-
----
-
-# Testing Status
-
-Current verified development status:
-
-```text
-Ruff lint                 PASS
-Ruff formatting           PASS
-Django system check       PASS
-pytest                    28 PASS
-Coverage                  89%
-Multi-passenger booking   PASS
-Guest booking             PASS
-Username login            PASS
-Email login               PASS
-Booking history           PASS
-HTMX search               PASS
-Destination filtering     PASS
-Seat validation           PASS
-```
-
----
-
-# Future Improvements
-
-AeroReserve currently focuses on the requirements of the Web Engineering course.
-
-Possible future improvements include:
-
-- Round-trip reservations
-- Connecting flights
-- Flight cancellation
-- Reservation modification
-- Email confirmations
-- QR boarding passes
-- Payment integration
-- Real airline APIs
-- Real-time fare information
-- Real airport schedule information
-- Aircraft-specific cabin layouts
-- Saved passenger profiles
-- Advanced airport search
-- Pagination and filtering for booking history
-
-These features are intentionally outside the current course-project scope.
+- Render Blueprint
+- PostgreSQL
+- Gunicorn
+- WhiteNoise
+- Health endpoint
+- Environment-based configuration
 
 ---
 
