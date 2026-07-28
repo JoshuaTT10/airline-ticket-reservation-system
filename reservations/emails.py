@@ -45,7 +45,7 @@ def _send_reservation_email(
         message=message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[reservation.contact_email],
-        fail_silently=False,
+        fail_silently=True,
     )
 
 
