@@ -13,6 +13,10 @@ from django.utils import timezone
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
+from .emails import (
+    send_reservation_cancellation_email,
+    send_reservation_confirmation_email,
+)
 from .forms import (
     FlightSearchForm,
     RegistrationForm,
@@ -1304,3 +1308,384 @@ class ReservationCancellationTests(TestCase):
         )
 
         assert response.status_code == 404
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="AeroReserve <noreply@example.com>",
+)
+class ReservationEmailTests(TestCase):
+    def setUp(self):
+        self.travel_date = timezone.localdate() + timedelta(days=2)
+
+        self.departure = City.objects.create(
+            name="Email Tokyo",
+            airport_code="ETK",
+            country="Japan",
+        )
+
+        self.arrival = City.objects.create(
+            name="Email London",
+            airport_code="ELN",
+            country="United Kingdom",
+        )
+
+        self.airline = Airline.objects.create(
+            name="Email Airways",
+            airline_code="EA",
+        )
+
+        self.flight = Flight.objects.create(
+            airline=self.airline,
+            departure_city=self.departure,
+            arrival_city=self.arrival,
+            flight_number="EA500",
+            departure_time=time(10, 30),
+            arrival_time=time(18, 45),
+            economy_price=Decimal("450.00"),
+            business_price=Decimal("1100.00"),
+            currency="USD",
+        )
+
+        self.first_seat = Seat.objects.create(
+            flight=self.flight,
+            row_number=4,
+            seat_letter="A",
+            cabin_class=Seat.CabinClass.ECONOMY,
+        )
+
+        self.second_seat = Seat.objects.create(
+            flight=self.flight,
+            row_number=4,
+            seat_letter="B",
+            cabin_class=Seat.CabinClass.ECONOMY,
+        )
+
+        self.user = User.objects.create_user(
+            username="emailuser",
+            email="account@example.com",
+            password="StrongPass123!",
+            first_name="Email",
+            last_name="User",
+        )
+
+        self.other_user = User.objects.create_user(
+            username="otheremailuser",
+            email="other@example.com",
+            password="StrongPass123!",
+        )
+
+    def create_reservation(
+        self,
+        *,
+        contact_email="traveller@example.com",
+        user=None,
+        cancelled=False,
+        passenger_count=2,
+    ):
+        reservation = Reservation.objects.create(
+            user=user,
+            contact_email=contact_email,
+            flight=self.flight,
+            travel_date=self.travel_date,
+            cabin_class=Seat.CabinClass.ECONOMY,
+            total_price=(Decimal("450.00") * passenger_count),
+            currency="USD",
+            status=(
+                Reservation.Status.CANCELLED
+                if cancelled
+                else Reservation.Status.CONFIRMED
+            ),
+            cancelled_at=(timezone.now() if cancelled else None),
+        )
+
+        seats = [
+            self.first_seat,
+            self.second_seat,
+        ]
+
+        passenger_names = [
+            "Alex Traveller",
+            "Jamie Traveller",
+        ]
+
+        for index in range(passenger_count):
+            Booking.objects.create(
+                reservation=reservation,
+                user=user,
+                flight=self.flight,
+                seat=seats[index],
+                travel_date=self.travel_date,
+                passenger_name=passenger_names[index],
+                price=Decimal("450.00"),
+                currency="USD",
+                is_cancelled=cancelled,
+            )
+
+        return reservation
+
+    def booking_url(self):
+        return reverse(
+            "reservations:seat_selection",
+            kwargs={
+                "flight_id": self.flight.id,
+            },
+        )
+
+    def cancel_url(self, reservation):
+        return reverse(
+            "reservations:cancel_reservation",
+            kwargs={
+                "booking_reference": reservation.booking_reference,
+            },
+        )
+
+    def test_confirmation_email_service_returns_one(self):
+        reservation = self.create_reservation()
+
+        result = send_reservation_confirmation_email(reservation.pk)
+
+        assert result == 1
+
+    def test_confirmation_email_sends_one_message(self):
+        reservation = self.create_reservation()
+
+        send_reservation_confirmation_email(reservation.pk)
+
+        assert len(mail.outbox) == 1
+
+    def test_confirmation_email_uses_contact_email(self):
+        reservation = self.create_reservation(
+            contact_email="booking@example.com",
+            user=self.user,
+        )
+
+        send_reservation_confirmation_email(reservation.pk)
+
+        assert mail.outbox[0].to == ["booking@example.com"]
+
+    def test_confirmation_email_does_not_default_to_user_email(self):
+        reservation = self.create_reservation(
+            contact_email="contact@example.com",
+            user=self.user,
+        )
+
+        send_reservation_confirmation_email(reservation.pk)
+
+        assert mail.outbox[0].to != [self.user.email]
+
+    def test_confirmation_email_uses_default_sender(self):
+        reservation = self.create_reservation()
+
+        send_reservation_confirmation_email(reservation.pk)
+
+        assert mail.outbox[0].from_email == ("AeroReserve <noreply@example.com>")
+
+    def test_confirmation_subject_contains_reference(self):
+        reservation = self.create_reservation()
+
+        send_reservation_confirmation_email(reservation.pk)
+
+        assert reservation.booking_reference in (mail.outbox[0].subject)
+
+    def test_confirmation_subject_mentions_confirmation(self):
+        reservation = self.create_reservation()
+
+        send_reservation_confirmation_email(reservation.pk)
+
+        assert "confirmed" in (mail.outbox[0].subject.lower())
+
+    def test_confirmation_body_contains_booking_reference(self):
+        reservation = self.create_reservation()
+
+        send_reservation_confirmation_email(reservation.pk)
+
+        assert reservation.booking_reference in (mail.outbox[0].body)
+
+    def test_confirmation_body_contains_route(self):
+        reservation = self.create_reservation()
+
+        send_reservation_confirmation_email(reservation.pk)
+
+        body = mail.outbox[0].body
+
+        assert "ETK" in body
+        assert "ELN" in body
+        assert "Email Tokyo" in body
+        assert "Email London" in body
+
+    def test_confirmation_body_contains_airline_and_flight(self):
+        reservation = self.create_reservation()
+
+        send_reservation_confirmation_email(reservation.pk)
+
+        body = mail.outbox[0].body
+
+        assert "Email Airways" in body
+        assert "EA500" in body
+
+    def test_confirmation_body_contains_all_passengers(self):
+        reservation = self.create_reservation()
+
+        send_reservation_confirmation_email(reservation.pk)
+
+        body = mail.outbox[0].body
+
+        assert "Alex Traveller" in body
+        assert "Jamie Traveller" in body
+
+    def test_confirmation_body_contains_all_seats(self):
+        reservation = self.create_reservation()
+
+        send_reservation_confirmation_email(reservation.pk)
+
+        body = mail.outbox[0].body
+
+        assert "4A" in body
+        assert "4B" in body
+
+    def test_confirmation_body_contains_total(self):
+        reservation = self.create_reservation()
+
+        send_reservation_confirmation_email(reservation.pk)
+
+        body = mail.outbox[0].body
+
+        assert "USD" in body
+        assert "900.00" in body
+
+    def test_blank_contact_email_sends_nothing(self):
+        reservation = self.create_reservation(
+            contact_email="",
+        )
+
+        result = send_reservation_confirmation_email(reservation.pk)
+
+        assert result == 0
+        assert len(mail.outbox) == 0
+
+    def test_cancellation_email_service_returns_one(self):
+        reservation = self.create_reservation(
+            cancelled=True,
+        )
+
+        result = send_reservation_cancellation_email(reservation.pk)
+
+        assert result == 1
+
+    def test_cancellation_email_sends_one_message(self):
+        reservation = self.create_reservation(
+            cancelled=True,
+        )
+
+        send_reservation_cancellation_email(reservation.pk)
+
+        assert len(mail.outbox) == 1
+
+    def test_cancellation_subject_contains_reference(self):
+        reservation = self.create_reservation(
+            cancelled=True,
+        )
+
+        send_reservation_cancellation_email(reservation.pk)
+
+        assert reservation.booking_reference in (mail.outbox[0].subject)
+
+    def test_cancellation_subject_mentions_cancelled(self):
+        reservation = self.create_reservation(
+            cancelled=True,
+        )
+
+        send_reservation_cancellation_email(reservation.pk)
+
+        assert "cancelled" in (mail.outbox[0].subject.lower())
+
+    def test_cancellation_body_contains_passengers_and_seats(self):
+        reservation = self.create_reservation(
+            cancelled=True,
+        )
+
+        send_reservation_cancellation_email(reservation.pk)
+
+        body = mail.outbox[0].body
+
+        assert "Alex Traveller" in body
+        assert "Jamie Traveller" in body
+        assert "4A" in body
+        assert "4B" in body
+
+    def test_cancellation_body_says_seats_were_released(self):
+        reservation = self.create_reservation(
+            cancelled=True,
+        )
+
+        send_reservation_cancellation_email(reservation.pk)
+
+        assert "released" in (mail.outbox[0].body.lower())
+
+    def test_booking_view_sends_confirmation_after_commit(self):
+        with self.captureOnCommitCallbacks(execute=True) as callbacks:
+            response = self.client.post(
+                self.booking_url(),
+                {
+                    "travel_date": self.travel_date.isoformat(),
+                    "ticket_class": Seat.CabinClass.ECONOMY,
+                    "passenger_count": 1,
+                    "seat_ids": str(self.first_seat.id),
+                    "contact_email": "guest@example.com",
+                    "passenger_1_name": "Guest Passenger",
+                },
+            )
+
+        assert response.status_code == 302
+        assert len(callbacks) == 1
+        assert len(mail.outbox) == 1
+        assert mail.outbox[0].to == ["guest@example.com"]
+
+    def test_invalid_booking_does_not_send_email(self):
+        with self.captureOnCommitCallbacks(execute=True) as callbacks:
+            response = self.client.post(
+                self.booking_url(),
+                {
+                    "travel_date": self.travel_date.isoformat(),
+                    "ticket_class": Seat.CabinClass.ECONOMY,
+                    "passenger_count": 1,
+                    "seat_ids": "",
+                    "contact_email": "guest@example.com",
+                    "passenger_1_name": "Guest Passenger",
+                },
+            )
+
+        assert response.status_code == 200
+        assert len(callbacks) == 0
+        assert len(mail.outbox) == 0
+
+    def test_cancellation_view_sends_email_after_commit(self):
+        reservation = self.create_reservation(
+            contact_email="cancel@example.com",
+            user=self.user,
+        )
+
+        self.client.force_login(self.user)
+
+        with self.captureOnCommitCallbacks(execute=True) as callbacks:
+            response = self.client.post(self.cancel_url(reservation))
+
+        assert response.status_code == 302
+        assert len(callbacks) == 1
+        assert len(mail.outbox) == 1
+        assert mail.outbox[0].to == ["cancel@example.com"]
+
+    def test_unauthorized_cancellation_sends_no_email(self):
+        reservation = self.create_reservation(
+            user=self.user,
+        )
+
+        self.client.force_login(self.other_user)
+
+        with self.captureOnCommitCallbacks(execute=True) as callbacks:
+            response = self.client.post(self.cancel_url(reservation))
+
+        assert response.status_code == 404
+        assert len(callbacks) == 0
+        assert len(mail.outbox) == 0
