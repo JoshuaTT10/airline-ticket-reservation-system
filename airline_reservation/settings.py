@@ -217,8 +217,8 @@ if not DEBUG:
     X_FRAME_OPTIONS = "DENY"
 
 
-# Local development prints emails in the terminal.
-# Render overrides this with the Mailjet API backend.
+# Local development prints messages in the terminal.
+# Render overrides this with the Resend HTTPS API backend.
 
 EMAIL_BACKEND = os.environ.get(
     "EMAIL_BACKEND",
@@ -226,17 +226,13 @@ EMAIL_BACKEND = os.environ.get(
 )
 
 ANYMAIL = {
-    "MAILJET_API_KEY": os.environ.get(
-        "MAILJET_API_KEY",
-        "",
-    ),
-    "MAILJET_SECRET_KEY": os.environ.get(
-        "MAILJET_SECRET_KEY",
+    "RESEND_API_KEY": os.environ.get(
+        "RESEND_API_KEY",
         "",
     ),
 }
 
 DEFAULT_FROM_EMAIL = os.environ.get(
     "DEFAULT_FROM_EMAIL",
-    "AeroReserve <noreply@aeroreserve.local>",
+    "AeroReserve <onboarding@resend.dev>",
 )
