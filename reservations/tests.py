@@ -373,6 +373,7 @@ class AeroReserveTestCase(TestCase):
                 "seat_ids": (f"{self.economy_seats[0].id},{self.economy_seats[1].id}"),
                 "passenger_1_name": ("Josh Test"),
                 "passenger_2_name": ("Dev Test"),
+                "contact_email": "josh@example.com",
             },
         )
 
@@ -402,6 +403,7 @@ class AeroReserveTestCase(TestCase):
                 "passenger_count": 1,
                 "seat_ids": str(self.economy_seats[0].id),
                 "passenger_1_name": ("Guest Passenger"),
+                "contact_email": "guest@example.com",
             },
         )
 

@@ -2687,3 +2687,43 @@ select.form-control {
     background: #fef2f2;
     color: #b91c1c;
 }
+
+.contact-email-panel {
+    margin: 22px 0;
+
+    padding: 17px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 12px;
+
+    background: var(--surface-soft);
+}
+
+.contact-email-heading {
+    display: flex;
+
+    align-items: flex-start;
+    justify-content: space-between;
+
+    margin-bottom: 13px;
+}
+
+.contact-email-heading strong,
+.contact-email-heading span {
+    display: block;
+}
+
+.contact-email-heading strong {
+    color: var(--text);
+
+    font-size: 0.9rem;
+}
+
+.contact-email-heading span {
+    margin-top: 3px;
+
+    color: var(--muted);
+
+    font-size: 0.73rem;
+}

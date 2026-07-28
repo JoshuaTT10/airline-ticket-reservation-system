@@ -216,6 +216,11 @@ class Reservation(models.Model):
         blank=True,
     )
 
+    contact_email = models.EmailField(
+        blank=True,
+        default="",
+    )
+
     flight = models.ForeignKey(
         Flight,
         on_delete=models.CASCADE,

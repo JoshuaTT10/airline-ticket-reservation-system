@@ -139,6 +139,17 @@ class MultiPassengerBookingForm(forms.Form):
         widget=forms.HiddenInput(),
     )
 
+    contact_email = forms.EmailField(
+        label="Confirmation email",
+        widget=forms.EmailInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "you@example.com",
+                "autocomplete": "email",
+            }
+        ),
+    )
+
     def __init__(
         self,
         *args,
@@ -156,6 +167,9 @@ class MultiPassengerBookingForm(forms.Form):
         self.ticket_class = ticket_class
         self.passenger_count = passenger_count
         self.user = user
+
+        if user is not None and user.is_authenticated and user.email:
+            self.fields["contact_email"].initial = user.email
 
         default_name = ""
 
@@ -178,6 +192,9 @@ class MultiPassengerBookingForm(forms.Form):
                     }
                 ),
             )
+
+    def clean_contact_email(self):
+        return self.cleaned_data["contact_email"].strip().lower()
 
     def clean_seat_ids(self):
         raw_value = self.cleaned_data["seat_ids"]

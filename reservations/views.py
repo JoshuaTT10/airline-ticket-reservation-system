@@ -387,7 +387,7 @@ def seat_selection(
 
         if form.is_valid():
             selected_seats = form.cleaned_data["seat_ids"]
-
+            contact_email = form.cleaned_data["contact_email"]
             passenger_names = form.passenger_names()
 
             booking_user = request.user if (request.user.is_authenticated) else None
@@ -401,6 +401,7 @@ def seat_selection(
                         cabin_class=(ticket_class),
                         total_price=(total_price),
                         currency=(flight.currency),
+                        contact_email=contact_email,
                     )
 
                     for (
