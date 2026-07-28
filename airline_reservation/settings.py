@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_htmx",
     "reservations",
+    "anymail",
 ]
 
 
@@ -216,23 +217,23 @@ if not DEBUG:
     X_FRAME_OPTIONS = "DENY"
 
 
+# Local development prints emails in the terminal.
+# Render overrides this with the Mailjet API backend.
+
 EMAIL_BACKEND = os.environ.get(
     "EMAIL_BACKEND",
     "django.core.mail.backends.console.EmailBackend",
 )
 
-EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
-EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
-
-EMAIL_USE_TLS = os.environ.get(
-    "EMAIL_USE_TLS",
-    "True",
-).lower() in {
-    "1",
-    "true",
-    "yes",
+ANYMAIL = {
+    "MAILJET_API_KEY": os.environ.get(
+        "MAILJET_API_KEY",
+        "",
+    ),
+    "MAILJET_SECRET_KEY": os.environ.get(
+        "MAILJET_SECRET_KEY",
+        "",
+    ),
 }
 
 DEFAULT_FROM_EMAIL = os.environ.get(
