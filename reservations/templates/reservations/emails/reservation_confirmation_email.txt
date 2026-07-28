@@ -1,0 +1,38 @@
+Hello,
+
+Your AeroReserve reservation has been confirmed.
+
+BOOKING DETAILS
+
+Booking reference: {{ reservation.booking_reference }}
+Status: {{ reservation.get_status_display }}
+Airline: {{ reservation.flight.airline.name }}
+Flight: {{ reservation.flight.flight_number }}
+Route: {{ reservation.flight.departure_city.airport_code }} → {{ reservation.flight.arrival_city.airport_code }}
+Departure airport: {{ reservation.flight.departure_city.name }}
+Arrival airport: {{ reservation.flight.arrival_city.name }}
+Travel date: {{ reservation.travel_date|date:"F d, Y" }}
+Departure time: {{ reservation.flight.departure_time|time:"H:i" }}
+Arrival time: {{ reservation.flight.arrival_time|time:"H:i" }}
+Cabin: {{ reservation.get_cabin_class_display }}
+Passengers: {{ reservation.passenger_count }}
+
+PASSENGERS AND SEATS
+
+{% for booking in passenger_bookings %}
+{{ forloop.counter }}. {{ booking.passenger_name }}
+   Seat: {{ booking.seat.seat_number }}
+   Cabin: {{ booking.seat.get_cabin_class_display }}
+   Fare: {{ booking.currency }} {{ booking.price|floatformat:2 }}
+
+{% endfor %}
+TOTAL
+
+{{ reservation.currency }} {{ reservation.total_price|floatformat:2 }}
+
+You can use booking reference {{ reservation.booking_reference }} to identify this reservation.
+
+Thank you for choosing AeroReserve.
+
+AeroReserve
+Plan. Book. Fly.

@@ -1,0 +1,29 @@
+Hello,
+
+Your AeroReserve reservation has been cancelled successfully.
+
+CANCELLED RESERVATION
+
+Booking reference: {{ reservation.booking_reference }}
+Status: {{ reservation.get_status_display }}
+Airline: {{ reservation.flight.airline.name }}
+Flight: {{ reservation.flight.flight_number }}
+Route: {{ reservation.flight.departure_city.airport_code }} → {{ reservation.flight.arrival_city.airport_code }}
+Travel date: {{ reservation.travel_date|date:"F d, Y" }}
+Cabin: {{ reservation.get_cabin_class_display }}
+
+PASSENGERS
+
+{% for booking in passenger_bookings %}
+{{ forloop.counter }}. {{ booking.passenger_name }}
+   Seat: {{ booking.seat.seat_number }}
+
+{% endfor %}
+The seats associated with this reservation have been released.
+
+{% if reservation.cancelled_at %}
+Cancellation recorded: {{ reservation.cancelled_at|date:"F d, Y" }} at {{ reservation.cancelled_at|time:"H:i" }}
+{% endif %}
+
+AeroReserve
+Plan. Book. Fly.
