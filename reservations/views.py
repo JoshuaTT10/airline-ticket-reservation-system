@@ -1,4 +1,5 @@
 from datetime import timedelta
+from functools import partial
 
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -22,6 +23,10 @@ from django.views.decorators.http import (
     require_POST,
 )
 
+from .emails import (
+    send_reservation_cancellation_email,
+    send_reservation_confirmation_email,
+)
 from .forms import (
     MAX_BOOKING_DAYS,
     MAX_PASSENGERS,
@@ -426,6 +431,14 @@ def seat_selection(
                         booking.full_clean()
                         booking.save()
 
+                transaction.on_commit(
+                    partial(
+                        send_reservation_confirmation_email,
+                        reservation.pk,
+                    ),
+                    robust=True,
+                )
+
             except (
                 IntegrityError,
                 ValidationError,
@@ -587,6 +600,14 @@ def cancel_reservation(
             is_cancelled=False,
         ).update(
             is_cancelled=True,
+        )
+
+        transaction.on_commit(
+            partial(
+                send_reservation_cancellation_email,
+                reservation.pk,
+            ),
+            robust=True,
         )
 
     messages.success(
