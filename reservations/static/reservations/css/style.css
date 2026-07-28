@@ -2118,38 +2118,160 @@ select.form-control {
 
 
 /* =========================================================
-   19. FOOTER
+   FOOTER
    ========================================================= */
 
 .site-footer {
-    border-top:
-            1px solid
-            var(--line);
+    border-top: 1px solid var(--line);
 
-    background: #ffffff;
+    background: #0f172a;
+
+    color: #cbd5e1;
 }
 
 .footer-content {
-    display: flex;
+    display: grid;
+
+    grid-template-columns:
+        minmax(240px, 1fr)
+        auto
+        auto;
 
     align-items: center;
-    justify-content: space-between;
 
-    gap: 30px;
+    gap: 48px;
 
-    min-height: 76px;
+    min-height: 150px;
 
-    color: var(--muted);
+    padding-top: 32px;
+    padding-bottom: 32px;
+}
+
+.footer-brand {
+    min-width: 0;
+}
+
+.footer-logo {
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 11px;
+
+    color: #ffffff;
+
+    font-size: 1.05rem;
+    font-weight: 800;
+
+    letter-spacing: -0.02em;
+}
+
+.footer-logo .brand-mark {
+    width: 36px;
+    height: 36px;
+
+    border-radius: 10px;
 
     font-size: 0.72rem;
 }
 
-.footer-content strong {
-    color: var(--text);
+.footer-brand p {
+    max-width: 390px;
 
-    font-size: 0.8rem;
+    margin: 13px 0 0;
+
+    color: #94a3b8;
+
+    font-size: 0.82rem;
+
+    line-height: 1.65;
 }
 
+.footer-links {
+    display: flex;
+
+    align-items: center;
+
+    gap: 24px;
+}
+
+.footer-links a {
+    color: #cbd5e1;
+
+    font-size: 0.8rem;
+    font-weight: 650;
+
+    transition: color var(--transition);
+}
+
+.footer-links a:hover {
+    color: #ffffff;
+}
+
+.footer-meta {
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: flex-end;
+
+    color: #64748b;
+
+    font-size: 0.7rem;
+
+    line-height: 1.8;
+}
+
+
+@media (max-width: 900px) {
+
+    .footer-content {
+        grid-template-columns:
+            1fr 1fr;
+    }
+
+    .footer-meta {
+        grid-column: 1 / -1;
+
+        align-items: flex-start;
+    }
+}
+
+
+@media (max-width: 680px) {
+
+    .footer-content {
+        grid-template-columns:
+            1fr;
+
+        gap: 25px;
+
+        min-height: auto;
+
+        padding-top: 35px;
+        padding-bottom: 35px;
+    }
+
+    .footer-links {
+        align-items: flex-start;
+
+        flex-direction: column;
+
+        gap: 12px;
+    }
+
+    .footer-meta {
+        grid-column: auto;
+
+        align-items: flex-start;
+
+        padding-top: 19px;
+
+        border-top:
+                1px solid
+                rgba(148, 163, 184, 0.16);
+    }
+}
 
 /* =========================================================
    20. TABLET / SMALL DESKTOP

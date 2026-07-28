@@ -152,16 +152,69 @@
 
     <div class="container footer-content">
 
-        <strong>
-            AeroReserve
-        </strong>
+        <div class="footer-brand">
 
-        <span>
-            University web-engineering demonstration.
-            Airport and airline names are real;
-            schedules, availability and fares are
-            generated demo data.
-        </span>
+            <a
+                    href="{% url 'reservations:home' %}"
+                    class="footer-logo"
+            >
+                <span class="brand-mark">
+                    AR
+                </span>
+
+                <span>
+                    AeroReserve
+                </span>
+            </a>
+
+            <p>
+                Search, select and reserve your journey with confidence.
+            </p>
+
+        </div>
+
+
+        <nav
+                class="footer-links"
+                aria-label="Footer navigation"
+        >
+
+            <a href="{% url 'reservations:home' %}">
+                Search flights
+            </a>
+
+            {% if user.is_authenticated %}
+
+                <a href="{% url 'reservations:booking_history' %}">
+                    My bookings
+                </a>
+
+            {% else %}
+
+                <a href="{% url 'reservations:login' %}">
+                    Sign in
+                </a>
+
+                <a href="{% url 'reservations:register' %}">
+                    Create account
+                </a>
+
+            {% endif %}
+
+        </nav>
+
+
+        <div class="footer-meta">
+
+            <span>
+                © 2026 AeroReserve
+            </span>
+
+            <span>
+                Plan. Book. Fly.
+            </span>
+
+        </div>
 
     </div>
 
